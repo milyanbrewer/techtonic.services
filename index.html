@@ -103,6 +103,12 @@ textarea{font:12.5px/1.5 var(--f-mono);resize:vertical;min-height:90px}
 .base label.wide{grid-column:span 2}
 .base input{font-family:var(--f-mono);font-size:13px}
 .muted{color:var(--muted);font-size:12.5px}
+.rend-box{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.rend{width:100%;border-collapse:collapse;font:13px var(--f-mono)}
+.rend th{text-align:left;font:600 11px var(--f-display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}
+.rend td{padding:5px 8px;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rend tr.cur td{background:var(--accent-soft)}
+button.btn.sm{padding:3px 9px;font-size:12px}
 .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 .err{color:var(--tally);font-size:12.5px}
@@ -134,6 +140,14 @@ textarea{font:12.5px/1.5 var(--f-mono);resize:vertical;min-height:90px}
         <label class="wide">Widget ID <span class="muted">config[provider].widgetId</span><input id="b-widget" spellcheck="false"></label>
         <label class="wide">Preview size <span class="muted">for the embed code</span>
           <span class="ctl"><input id="b-w" value="1280" inputmode="numeric" aria-label="Width"> × <input id="b-h" value="720" inputmode="numeric" aria-label="Height"></span></label>
+      </div>
+      <div class="rend-box">
+        <div class="toolbar">
+          <button class="btn" id="btn-rend" type="button">Check renditions</button>
+          <button class="btn primary" id="btn-top" type="button" hidden>Start on highest</button>
+          <span id="rend-msg" class="muted">Reads this entry's quality list, so you can pick which one the player starts on.</span>
+        </div>
+        <div style="overflow-x:auto"><table class="rend" id="rend" hidden></table></div>
       </div>
       <details>
         <summary class="muted" style="cursor:pointer">Import an existing URL</summary>
@@ -259,7 +273,7 @@ const GROUPS = [
     ['abr.restrictions.maxBitrate','num','Max bitrate (bps)','',{min:0,step:1}],
     ['abr.defaultBandwidthEstimate','num','Starting bandwidth guess (bps)','Higher picks a better first rendition.',{min:0,step:1}],
     ['playback.options.html5.hls.testBandwidth','bool','Test speed on a low rendition first (HLS)','Tested on player 3.17: turning this off, even with a bandwidth guess, still started on the lowest rendition. Use Start rendition index instead.'],
-    ['playback.options.html5.hls.startLevel','num','Start rendition index (HLS)','Renditions are numbered from lowest quality: 0 is the lowest, so with 360p and 720p, 1 is 720p. ABR can still drop down after the start. Unset starts on the lowest. Tested: this is what gets a high-quality start.',{min:-1,step:1}],
+    ['playback.options.html5.hls.startLevel','num','Start rendition index (HLS)','0 is the lowest quality. Use Check renditions under Embed source to see the list and pick the highest. ABR can still drop down after the start. Unset starts on the lowest.',{min:-1,step:1}],
     ['abr.capLevelToPlayerSize','bool','Cap to player size','Never pick a rendition bigger than the player.'],
     ['abr.capLevelOnFPSDrop','bool','Cap on dropped frames',''],
     ['abr.fpsDroppedMonitoringThreshold','num','Dropped-frame threshold','Ratio, default 0.2.',{min:0,max:1,step:0.05}],
@@ -308,6 +322,7 @@ let base = {...DEFAULT_BASE};
 let cfg = {};
 let enc = 'readable';
 const views = {}; // path -> {row, sync()}
+let renditions = null; // [{bw,w,h}] in hls.js order, lowest bitrate first
 
 /* path helpers */
 const getP = (o,p) => p.split('.').reduce((a,k) => a == null ? undefined : a[k], o);
@@ -437,7 +452,9 @@ function lint(){
   else if(mn!=null && mn===mx) n.push(['info',`Locked to ${mn}p. This only holds if the entry has a ${mn}p flavor; check the entry’s flavors in KMC.`]);
   if(g('playback.captionsDisplay')===true && !g('playback.textLanguage')) n.push(['info','Captions are on but no language is set, so the player picks the default track.']);
   if(g('playback.loop')===true) n.push(['info','Loop is on. Remove it before going live if the session should end.']);
-  if(g('playback.options.html5.hls.startLevel')>0)
+  if(renditions && g('playback.options.html5.hls.startLevel')>=renditions.length)
+    n.push(['warn',`Start rendition ${g('playback.options.html5.hls.startLevel')} does not exist; this entry's last index is ${renditions.length-1}. Tested: an index past the end causes a level-switch error and a stall before playback recovers.`]);
+  else if(g('playback.options.html5.hls.startLevel')>0 && !renditions)
     n.push(['info',`Starts on rendition ${g('playback.options.html5.hls.startLevel')} (counting from 0 = lowest). The number points at a different quality on entries with more renditions; check the flavors on each event entry.`]);
   if(g('playback.options.html5.hls.testBandwidth')===false && g('playback.options.html5.hls.startLevel')==null)
     n.push(['info','Turning the speed test off does not change the starting rendition on this player. Set Start rendition index (HLS) instead.']);
@@ -457,7 +474,7 @@ function changed(){
   $('#open-url').href=buildUrl('encoded');
   $('#iframe-out').textContent=iframeCode();
   if(document.activeElement!==$('#json-out')) $('#json-out').value=JSON.stringify(cfg,null,2);
-  lint(); save();
+  lint(); save(); renderRenditions();
   if($('#auto').checked){ clearTimeout(reloadTimer); reloadTimer=setTimeout(loadPlayer,600); }
 }
 
@@ -465,6 +482,34 @@ function loadPlayer(){
   const st=$('#stage'); st.querySelector('iframe')?.remove();
   const f=document.createElement('iframe'); f.src=buildUrl('encoded'); f.allow='autoplay *; fullscreen *; encrypted-media *'; f.allowFullscreen=true; f.title='Kaltura player preview';
   st.appendChild(f); $('#idle').hidden=true;
+}
+
+/* renditions: same master playlist the player loads, read with an anonymous widget session */
+async function checkRenditions(){
+  const msg=$('#rend-msg'); msg.textContent='Checking…'; renditions=null; renderRenditions();
+  try{
+    const wid=base.widget||('_'+base.pid);
+    const s=await (await fetch(`https://${base.host}/api_v3/service/session/action/startWidgetSession?format=1&widgetId=${encodeURIComponent(wid)}`)).json();
+    if(!s.ks) throw new Error(s.message||'Kaltura did not return a session for this widget ID.');
+    const r=await fetch(`https://${base.host}/p/${encodeURIComponent(base.pid)}/sp/${encodeURIComponent(base.pid)}00/playManifest/entryId/${encodeURIComponent(base.entry)}/protocol/https/format/applehttp/ks/${s.ks}/a.m3u8`);
+    if(!r.ok) throw new Error(`Kaltura returned ${r.status} for this entry. Check the partner ID and entry ID.`);
+    const txt=await r.text();
+    const list=[...txt.matchAll(/#EXT-X-STREAM-INF:([^\n]*)/g)].map(x=>{ const a=x[1]; const res=a.match(/RESOLUTION=(\d+)x(\d+)/)||[];
+      return {bw:+((a.match(/(?:^|,)BANDWIDTH=(\d+)/)||[])[1]||0), w:+res[1]||0, h:+res[2]||0}; }).sort((a,b)=>a.bw-b.bw);
+    if(!list.length) throw new Error('The stream has no HLS renditions.');
+    renditions=list; msg.textContent=`${list.length} renditions found, numbered from lowest bitrate.`;
+  }catch(e){
+    msg.textContent = e instanceof TypeError ? 'Could not reach Kaltura from this page. The claude.ai preview blocks outside requests; use techtonic.services or the local copy.' : e.message;
+  }
+  renderRenditions(); lint();
+}
+function renderRenditions(){
+  const t=$('#rend'), top=$('#btn-top');
+  if(!renditions){ t.hidden=true; top.hidden=true; return; }
+  const cur=getP(cfg,'playback.options.html5.hls.startLevel');
+  t.hidden=false; top.hidden=false; top.textContent=`Start on highest (index ${renditions.length-1})`;
+  t.innerHTML='<tr><th>Index</th><th>Resolution</th><th>Bitrate</th><th></th></tr>'+renditions.map((r,i)=>
+    `<tr class="${cur===i?'cur':''}"><td>${i}</td><td>${r.h?`${r.w}×${r.h} (${r.h}p)`:'audio only'}</td><td>${(r.bw/1e6).toFixed(2)} Mbps</td><td>${cur===i?'<span class="muted">starts here</span>':`<button class="btn sm" type="button" data-i="${i}">Start here</button>`}</td></tr>`).join('');
 }
 
 /* import */
@@ -494,7 +539,7 @@ function importUrl(raw){
 /* base fields */
 function syncBase(){ $('#b-host').value=base.host; $('#b-pid').value=base.pid; $('#b-ui').value=base.ui; $('#b-entry').value=base.entry; $('#b-widget').value=base.widget||''; $('#b-w').value=base.w||1280; $('#b-h').value=base.h||720; }
 [['#b-host','host'],['#b-pid','pid'],['#b-ui','ui'],['#b-entry','entry'],['#b-widget','widget'],['#b-w','w'],['#b-h','h']].forEach(([s,k])=>
-  $(s).addEventListener('input',e=>{ base[k]=e.target.value.trim(); changed(); }));
+  $(s).addEventListener('input',e=>{ base[k]=e.target.value.trim(); if(!['w','h'].includes(k) && renditions){ renditions=null; $('#rend-msg').textContent='Source changed. Check renditions again.'; } changed(); }));
 
 /* persistence: per-viewer convenience only */
 function save(){ try{ localStorage.setItem('kel-state-2',JSON.stringify({base,cfg,enc})); }catch(e){} }
@@ -521,7 +566,10 @@ document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',
 $('#copy-url').addEventListener('click',()=>copy(buildUrl(enc),'URL'));
 $('#copy-iframe').addEventListener('click',()=>copy(iframeCode(),'Embed code'));
 $('#apply-json').addEventListener('click',()=>{ try{ const v=JSON.parse($('#json-out').value.replace(/[“”]/g,'"')); if(typeof v!=='object'||Array.isArray(v)||!v) throw new Error('Top level must be an object.'); cfg=v; $('#json-msg').textContent=''; $('#json-out').blur(); changed(); toast('Config applied'); }catch(e){ $('#json-msg').textContent='Invalid JSON: '+e.message; } });
-$('#btn-imp').addEventListener('click',()=>{ $('#imp-msg').textContent=importUrl($('#imp').value); });
+$('#btn-imp').addEventListener('click',()=>{ $('#imp-msg').textContent=importUrl($('#imp').value); checkRenditions(); });
+$('#btn-rend').addEventListener('click',checkRenditions);
+$('#btn-top').addEventListener('click',()=>{ put('playback.options.html5.hls.startLevel',renditions.length-1); changed(); toast(`Starts on index ${renditions.length-1}`); });
+$('#rend').addEventListener('click',e=>{ const b=e.target.closest('button[data-i]'); if(!b) return; put('playback.options.html5.hls.startLevel',Number(b.dataset.i)); changed(); });
 $('#btn-reset').addEventListener('click',()=>{ cfg={}; changed(); toast('All options cleared'); });
 $('#btn-default').addEventListener('click',()=>{ base={...DEFAULT_BASE}; cfg={}; syncBase(); changed(); toast('Reset to test URL'); });
 $('#btn-load').addEventListener('click',loadPlayer);
