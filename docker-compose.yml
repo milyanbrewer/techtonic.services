@@ -1,0 +1,7 @@
+services:
+  kaltura-embed-lab:
+    build: .
+    container_name: kaltura-embed-lab
+    ports:
+      - "8088:80"
+    restart: unless-stopped

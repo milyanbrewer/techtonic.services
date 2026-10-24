@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Kaltura Embed Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: broadcast desk. Patch-panel of controls on the left, sticky "program out" (URL + preview) on the right. */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --line:#d5dbe2; --fg:#17202a; --muted:#5b6876;
+  --accent:#0f5f8f; --accent-soft:#e1eef6; --tally:#c8322b; --ok:#2f7d4f; --warn:#a86a00; --warn-soft:#fbf1dd;
+  --code-bg:#f6f8fa;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --panel:#171e26; --line:#2a3542; --fg:#e4eaf0; --muted:#93a1b0;
+  --accent:#5fb0e3; --accent-soft:#16303f; --tally:#ff6b5e; --ok:#5cc28a; --warn:#e9b04f; --warn-soft:#2e2412;
+  --code-bg:#11171e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --panel:#171e26; --line:#2a3542; --fg:#e4eaf0; --muted:#93a1b0;
+  --accent:#5fb0e3; --accent-soft:#16303f; --tally:#ff6b5e; --ok:#5cc28a; --warn:#e9b04f; --warn-soft:#2e2412;
+  --code-bg:#11171e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font:600 26px/1.1 var(--f-display);margin:0;letter-spacing:.01em;text-wrap:balance;display:flex;align-items:center;gap:10px}
+.tally{width:10px;height:10px;border-radius:50%;background:var(--tally);box-shadow:0 0 0 3px color-mix(in srgb,var(--tally) 25%,transparent)}
+.sub{color:var(--muted);margin:4px 0 0;max-width:70ch}
+.sub a{color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:980px){.out{position:static}}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.card>h2,.card>summary{font:600 13px/1 var(--f-display);text-transform:uppercase;letter-spacing:.08em;margin:0;padding:12px 14px;
+  border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px}
+details.card>summary{cursor:pointer;list-style:none}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"+";font:500 16px var(--f-mono);color:var(--muted)}
+details[open].card>summary::after{content:"–"}
+details.card:not([open])>summary{border-bottom:0}
+details.card{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.count{font:500 11px var(--f-mono);color:var(--accent);background:var(--accent-soft);padding:3px 7px;border-radius:99px;letter-spacing:0;text-transform:none}
+.count:empty{display:none}
+.body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:4px 14px;align-items:center;padding-block:6px;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:0}
+.row.set .lbl b{color:var(--accent)}
+.row.set .lbl b::before{content:"● ";font-size:9px;vertical-align:2px}
+@media (max-width:520px){.row{grid-template-columns:minmax(0,1fr)}}
+.lbl b{font-weight:600;display:block}
+.lbl code{font:400 11.5px var(--f-mono);color:var(--muted);word-break:break-all}
+.lbl p{margin:2px 0 0;color:var(--muted);font-size:12.5px;line-height:1.4}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-width:0}
+input[type=color]{padding:2px;height:32px;width:56px}
+input[type=checkbox]{width:auto}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ctl{display:flex;gap:6px;align-items:center;min-width:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;border-right:1px solid var(--line);background:transparent;color:var(--muted);font:500 12.5px var(--f-mono);padding:6px 10px;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--panel)}
+.seg button[data-v=""][aria-pressed=true]{background:var(--line);color:var(--fg)}
+button.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+button.btn:hover{border-color:var(--accent)}
+button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+a.btn{font:500 13px var(--f-body);border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:7px 12px;text-decoration:none;white-space:nowrap}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12.5px var(--f-body);border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:5px 11px;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.chip small{font-family:var(--f-mono);color:var(--muted);margin-left:4px}
+pre.code{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font:12.5px/1.55 var(--f-mono);
+  white-space:pre-wrap;word-break:break-all;overflow-x:auto;max-height:260px;overflow-y:auto}
+pre.code .k{color:var(--accent)} pre.code .v{color:var(--ok)} pre.code .h{color:var(--muted)}
+textarea{font:12.5px/1.5 var(--f-mono);resize:vertical;min-height:90px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:transparent;color:var(--muted);font:500 13px var(--f-body);padding:8px 10px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
+.stage{position:relative;aspect-ratio:16/9;max-width:100%;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.stage .idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#c9d3dc;text-align:center;padding:16px;font-size:13px}
+.stage .idle strong{font:600 15px var(--f-display);letter-spacing:.05em;text-transform:uppercase;color:#fff}
+.notes{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.notes li{border-left:3px solid var(--warn);background:var(--warn-soft);padding:7px 10px;border-radius:0 6px 6px 0;font-size:13px}
+.notes li.info{border-left-color:var(--accent);background:var(--accent-soft)}
+.notes:empty{display:none}
+.base{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.base{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.base label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.base label.wide{grid-column:span 2}
+.base input{font-family:var(--f-mono);font-size:13px}
+.muted{color:var(--muted);font-size:12.5px}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.err{color:var(--tally);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="tally" aria-hidden="true"></span>Kaltura Embed Lab</h1>
+      <p class="sub">Build <code>embedPlaykitJs</code> iframe URLs by flipping the <code>config[…]</code> options from
+        <a href="https://github.com/kaltura/playkit-js/blob/master/docs/configuration.md" target="_blank" rel="noopener">playkit-js configuration</a>.
+        Unset options are left out of the URL, so the uiconf's defaults apply.</p>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="btn-default" type="button">Reset to test URL</button>
+      <button class="btn" id="btn-reset" type="button">Clear all options</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <h2>Embed source</h2>
+    <div class="body">
+      <div class="base">
+        <label>Host<input id="b-host" spellcheck="false"></label>
+        <label>Partner ID<input id="b-pid" inputmode="numeric" spellcheck="false"></label>
+        <label>uiconf_id<input id="b-ui" inputmode="numeric" spellcheck="false"></label>
+        <label>entry_id<input id="b-entry" spellcheck="false"></label>
+        <label class="wide">Widget ID <span class="muted">config[provider].widgetId</span><input id="b-widget" spellcheck="false"></label>
+        <label class="wide">Preview size <span class="muted">for the embed code</span>
+          <span class="ctl"><input id="b-w" value="1280" inputmode="numeric" aria-label="Width"> × <input id="b-h" value="720" inputmode="numeric" aria-label="Height"></span></label>
+      </div>
+      <details>
+        <summary class="muted" style="cursor:pointer">Import an existing URL</summary>
+        <div class="body" style="padding-inline:0">
+          <textarea id="imp" placeholder="Paste a full embed URL. Line breaks, spaces and curly quotes are cleaned up."></textarea>
+          <div class="toolbar"><button class="btn primary" id="btn-imp" type="button">Import</button><span id="imp-msg" class="muted"></span></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="col" id="controls">
+      <section class="card">
+        <h2>Recipes <span class="muted" style="text-transform:none;letter-spacing:0;font:400 12px var(--f-body)">Oracle AI World 2026 notes. Click to toggle.</span></h2>
+        <div class="body"><div class="chips" id="recipes"></div></div>
+      </section>
+      <!-- option groups are rendered here -->
+    </div>
+
+    <div class="col out">
+      <section class="card">
+        <div class="tabs" role="tablist" style="padding-inline:8px">
+          <button role="tab" aria-selected="true" data-tab="url" id="tab-url">URL</button>
+          <button role="tab" aria-selected="false" data-tab="iframe" id="tab-iframe">Embed code</button>
+          <button role="tab" aria-selected="false" data-tab="json" id="tab-json">Config JSON</button>
+        </div>
+        <div class="body">
+          <div data-pane="url">
+            <div class="toolbar" style="margin-bottom:8px">
+              <div class="seg" id="enc" role="group" aria-label="URL encoding">
+                <button type="button" data-v="readable" aria-pressed="true">Readable</button>
+                <button type="button" data-v="encoded" aria-pressed="false">Encoded</button>
+              </div>
+              <button class="btn primary" id="copy-url" type="button">Copy URL</button>
+              <a class="btn" id="open-url" target="_blank" rel="noopener" href="#">Open in new tab ↗</a>
+            </div>
+            <pre class="code" id="url-out"></pre>
+          </div>
+          <div data-pane="iframe" hidden>
+            <div class="toolbar" style="margin-bottom:8px"><button class="btn primary" id="copy-iframe" type="button">Copy embed code</button></div>
+            <pre class="code" id="iframe-out"></pre>
+          </div>
+          <div data-pane="json" hidden>
+            <p class="muted" style="margin:0 0 6px">Edit any key here, including ones without a control, then apply.</p>
+            <textarea id="json-out" rows="12" spellcheck="false"></textarea>
+            <div class="toolbar" style="margin-top:8px"><button class="btn primary" id="apply-json" type="button">Apply JSON</button><span id="json-msg" class="err"></span></div>
+          </div>
+          <ul class="notes" id="notes"></ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Preview
+          <span class="toolbar" style="text-transform:none;letter-spacing:0">
+            <label class="muted" style="display:flex;gap:6px;align-items:center;font:400 12.5px var(--f-body)"><input type="checkbox" id="auto"> Reload on change</label>
+            <button class="btn" id="btn-load" type="button">Load player</button>
+          </span>
+        </h2>
+        <div class="body">
+          <div class="stage" id="stage">
+            <div class="idle" id="idle"><strong>Player off air</strong><span>Press <em>Load player</em> to run the current URL here.</span>
+              <span style="font-size:12px;opacity:.8">If it stays blank, this host blocks embedded sites (claude.ai artifacts do). Use <em>Open in new tab</em>, or save this page as an .html file and open it locally.</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+const B = v => v; // marker for readability
+/* field: [path, type, label, help, extra]
+   types: bool | enum(values) | num | text(datalist) | list(numbers) | rgb */
+const GROUPS = [
+  {title:'Playback', open:true, fields:[
+    ['playback.autoplay','enum','Autoplay','Start on load. "inview" waits until the player is visible.',[true,false,'inview']],
+    ['playback.muted','bool','Start muted',''],
+    ['playback.allowMutedAutoPlay','bool','Allow muted fallback','If the browser blocks autoplay with sound, start muted instead of not at all.'],
+    ['playback.volume','num','Volume','0 to 1.',{min:0,max:1,step:0.05}],
+    ['playback.loop','bool','Loop',''],
+    ['playback.preload','enum','Preload','',['none','metadata','auto']],
+    ['playback.playsinline','bool','Plays inline (iOS)','Off means iOS goes fullscreen on play.'],
+    ['playback.autopause','bool','Auto pause','Pause when the player scrolls out of view.'],
+    ['playback.pictureInPicture','bool','Picture-in-picture button',''],
+    ['playback.inBrowserFullscreen','bool','In-browser fullscreen','iOS: fill the browser instead of native fullscreen.'],
+    ['playback.playbackRates','list','Playback rates','Comma list, e.g. 0.5, 1, 1.5, 2'],
+    ['playback.audioLanguage','text','Audio language','ISO code, or "auto" for browser language.',['en','es','fr','de','auto']],
+    ['playback.preferNative.hls','bool','Prefer native HLS','Use the browser’s HLS (Safari) over hls.js.'],
+    ['playback.preferNative.dash','bool','Prefer native DASH',''],
+  ]},
+  {title:'Captions', open:true, fields:[
+    ['playback.textLanguage','text','Caption language','ISO code, "auto", or "off".',['en','es','fr','de','auto','off']],
+    ['playback.captionsDisplay','bool','Show captions on start',''],
+    ['text.forceCenter','bool','Force center','Overrides position, align and size from the VTT file.'],
+    ['text.textTrackDisplaySetting.align','enum','Text align','Overrides cue alignment in the VTT.',['start','center','end','left','right']],
+    ['text.textTrackDisplaySetting.line','num','Line','-16 to 16, or percent when snapToLines is off.',{min:-16,max:100,step:1}],
+    ['text.textTrackDisplaySetting.lineAlign','enum','Line align','',['start','center','end']],
+    ['text.textTrackDisplaySetting.position','num','Position %','0 to 100.',{min:0,max:100,step:1}],
+    ['text.textTrackDisplaySetting.positionAlign','enum','Position align','',['line-left','center','line-right']],
+    ['text.textTrackDisplaySetting.size','num','Cue box size %','0 to 100.',{min:0,max:100,step:1}],
+    ['text.textTrackDisplaySetting.snapToLines','bool','Snap to lines',''],
+    ['text.useNativeTextTrack','bool','Native text tracks','Let the browser render captions.'],
+    ['text.enableCEA708Captions','bool','CEA-608/708 captions','Embedded broadcast captions.'],
+  ]},
+  {title:'Caption style', fields:[
+    ['text.textStyle.fontSize','enum','Font size','',['50%','75%','100%','200%','300%','400%']],
+    ['text.textStyle.fontFamily','text','Font family','Any font the browser has.',['Arial','Helvetica','Verdana','sans-serif','monospace']],
+    ['text.textStyle.fontColor','rgb','Font colour',''],
+    ['text.textStyle.fontOpacity','num','Font opacity','0 to 1.',{min:0,max:1,step:0.05}],
+    ['text.textStyle.backgroundColor','rgb','Background colour',''],
+    ['text.textStyle.backgroundOpacity','num','Background opacity','0 to 1.',{min:0,max:1,step:0.05}],
+  ]},
+  {title:'Quality (ABR)', open:true, fields:[
+    ['abr.enabled','bool','Adaptive bitrate','Off locks to the starting rendition.'],
+    ['abr.restrictions.minHeight','num','Min height (px)','',{min:0,step:1}],
+    ['abr.restrictions.maxHeight','num','Max height (px)','',{min:0,step:1}],
+    ['abr.restrictions.minWidth','num','Min width (px)','',{min:0,step:1}],
+    ['abr.restrictions.maxWidth','num','Max width (px)','',{min:0,step:1}],
+    ['abr.restrictions.minBitrate','num','Min bitrate (bps)','',{min:0,step:1}],
+    ['abr.restrictions.maxBitrate','num','Max bitrate (bps)','',{min:0,step:1}],
+    ['abr.defaultBandwidthEstimate','num','Starting bandwidth guess (bps)','Higher picks a better first rendition.',{min:0,step:1}],
+    ['playback.options.html5.hls.testBandwidth','bool','Test speed on a low rendition first (HLS)','Tested on player 3.17: turning this off, even with a bandwidth guess, still started on the lowest rendition. Use Start rendition index instead.'],
+    ['playback.options.html5.hls.startLevel','num','Start rendition index (HLS)','Renditions are numbered from lowest quality: 0 is the lowest, so with 360p and 720p, 1 is 720p. ABR can still drop down after the start. Unset starts on the lowest. Tested: this is what gets a high-quality start.',{min:-1,step:1}],
+    ['abr.capLevelToPlayerSize','bool','Cap to player size','Never pick a rendition bigger than the player.'],
+    ['abr.capLevelOnFPSDrop','bool','Cap on dropped frames',''],
+    ['abr.fpsDroppedMonitoringThreshold','num','Dropped-frame threshold','Ratio, default 0.2.',{min:0,max:1,step:0.05}],
+    ['abr.fpsDroppedFramesInterval','num','Dropped-frame check (ms)','Default 5000.',{min:0,step:100}],
+  ]},
+  {title:'Start / clip', fields:[
+    ['sources.startTime','num','Start at (s)','',{min:0,step:1}],
+    ['sources.seekFrom','num','Seek from (s)','Clip start; the timeline begins here.',{min:0,step:1}],
+    ['sources.clipTo','num','Clip to (s)','Clip end.',{min:0,step:1}],
+  ]},
+  {title:'Live streaming', fields:[
+    ['streaming.lowLatencyMode','bool','Low latency mode','Default on for HLS, off for DASH.'],
+    ['streaming.forceBreakStall','bool','Force break stall','Helps weak devices that freeze on stalls.'],
+    ['streaming.switchDynamicToStatic','bool','Switch to VOD when live ends','DASH only.'],
+    ['streaming.trackEmsgEvents','bool','Track emsg events','DASH only.'],
+  ]},
+  {title:'Player', fields:[
+    ['disableUserCache','bool','Disable user cache','Ignore settings the viewer saved before (volume, captions, quality). Use on shared screens.'],
+    ['ui.disable','bool','Hide player UI','Kaltura player option, not in playkit-js docs.'],
+    ['log.level','enum','Log level','Shows in the browser console.',['DEBUG','INFO','WARN','ERROR','OFF']],
+  ]},
+];
+
+/* Recipes from the Oracle AI World 2026 notes */
+const RECIPES = [
+  {name:'Auto start', set:{'playback.autoplay':true}},
+  {name:'Auto mute', set:{'playback.muted':true}},
+  {name:'Max volume', set:{'playback.volume':1}},
+  {name:'English captions on', set:{'playback.textLanguage':'en','playback.captionsDisplay':true}},
+  {name:'Loop (testing)', set:{'playback.loop':true}},
+  {name:'Start on 2nd rendition (720p on test entry)', set:{'playback.options.html5.hls.startLevel':1}},
+  {name:'Force 1080p', set:{'abr.restrictions.minHeight':1080,'abr.restrictions.maxHeight':1080}},
+  {name:'Centre captions', set:{'text.textTrackDisplaySetting.align':'center'}},
+  {name:'Oracle Health live test', tag:'full', reset:true, set:{
+    'disableUserCache':true,'playback.autoplay':true,'playback.muted':false,'playback.allowMutedAutoPlay':true,
+    'playback.textLanguage':'en','playback.captionsDisplay':true,
+    'abr.restrictions.minHeight':1080,'abr.restrictions.maxHeight':1080,'text.textTrackDisplaySetting.align':'center'}},
+];
+
+const DEFAULT_BASE = {host:'cdnapisec.kaltura.com', pid:'2171811', ui:'54927872', entry:'1_596409k5', widget:'1_c8459zki'};
+const ORDER = ['provider','disableUserCache','playback','abr','text','sources','streaming','ui','log'];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let base = {...DEFAULT_BASE};
+let cfg = {};
+let enc = 'readable';
+const views = {}; // path -> {row, sync()}
+
+/* path helpers */
+const getP = (o,p) => p.split('.').reduce((a,k) => a == null ? undefined : a[k], o);
+function setP(o,p,v){ const ks=p.split('.'); let a=o; ks.slice(0,-1).forEach(k=>{ if(typeof a[k]!=='object'||a[k]===null) a[k]={}; a=a[k]; }); a[ks.at(-1)]=v; }
+function delP(o,p){ const ks=p.split('.'); const stack=[o]; let a=o;
+  for(const k of ks.slice(0,-1)){ if(a[k]==null) return; a=a[k]; stack.push(a); }
+  delete a[ks.at(-1)];
+  for(let i=ks.length-2;i>=0;i--){ const parent=stack[i]; const child=parent[ks[i]]; if(child && typeof child==='object' && !Array.isArray(child) && !Object.keys(child).length) delete parent[ks[i]]; } }
+function put(p,v){ if(v===undefined||v===''||v===null||(typeof v==='number'&&isNaN(v))) delP(cfg,p); else setP(cfg,p,v); }
+
+/* rendering controls */
+const rgbToHex = a => '#'+a.map(n=>Math.max(0,Math.min(255,n|0)).toString(16).padStart(2,'0')).join('');
+const hexToRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+
+function segment(path, values){
+  const wrap=document.createElement('div'); wrap.className='seg'; wrap.setAttribute('role','group');
+  const all=[['','unset'],...values.map(v=>[JSON.stringify(v), String(v)])];
+  all.forEach(([k,label])=>{ const b=document.createElement('button'); b.type='button'; b.dataset.v=k; b.textContent=label;
+    b.addEventListener('click',()=>{ put(path, k===''?undefined:JSON.parse(k)); changed(); }); wrap.appendChild(b); });
+  return {el:wrap, sync(){ const cur=getP(cfg,path); const key=cur===undefined?'':JSON.stringify(cur);
+    wrap.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.v===key))); }};
+}
+
+function buildControl(path,type,extra){
+  const id='f-'+path.replace(/\./g,'-');
+  if(type==='bool') return segment(path,[true,false]);
+  if(type==='enum' && extra.length<=5) return segment(path,extra);
+  if(type==='enum'){
+    const s=document.createElement('select'); s.id=id;
+    s.innerHTML='<option value="">unset</option>'+extra.map(v=>`<option value="${esc(JSON.stringify(v))}">${esc(v)}</option>`).join('');
+    s.addEventListener('change',()=>{ put(path, s.value===''?undefined:JSON.parse(s.value)); changed(); });
+    return {el:s, sync(){ const c=getP(cfg,path); s.value=c===undefined?'':JSON.stringify(c); }};
+  }
+  if(type==='num'){
+    const i=document.createElement('input'); i.type='number'; i.id=i.name=id; i.placeholder='unset';
+    Object.entries(extra||{}).forEach(([k,v])=>i.setAttribute(k,v));
+    i.addEventListener('input',()=>{ put(path, i.value===''?undefined:Number(i.value)); changed(path); });
+    return {el:i, sync(){ const c=getP(cfg,path); if(document.activeElement!==i) i.value=c===undefined?'':c; }};
+  }
+  if(type==='text'){
+    const i=document.createElement('input'); i.id=id; i.placeholder='unset'; i.spellcheck=false;
+    if(extra){ const dl=document.createElement('datalist'); dl.id=id+'-dl'; dl.innerHTML=extra.map(v=>`<option value="${esc(v)}">`).join(''); i.setAttribute('list',dl.id); document.body.appendChild(dl); }
+    i.addEventListener('input',()=>{ put(path, i.value.trim()||undefined); changed(path); });
+    return {el:i, sync(){ const c=getP(cfg,path); if(document.activeElement!==i) i.value=c===undefined?'':c; }};
+  }
+  if(type==='list'){
+    const i=document.createElement('input'); i.id=id; i.placeholder='unset'; i.spellcheck=false;
+    i.addEventListener('input',()=>{ const arr=i.value.split(',').map(s=>s.trim()).filter(Boolean).map(Number).filter(n=>!isNaN(n)); put(path, arr.length?arr:undefined); changed(path); });
+    return {el:i, sync(){ const c=getP(cfg,path); if(document.activeElement!==i) i.value=Array.isArray(c)?c.join(', '):''; }};
+  }
+  if(type==='rgb'){
+    const w=document.createElement('div'); w.className='ctl';
+    const on=document.createElement('input'); on.type='checkbox'; on.id=id+'-on'; on.setAttribute('aria-label','Set');
+    const c=document.createElement('input'); c.type='color'; c.id=id; c.value='#ffffff';
+    const out=document.createElement('code'); out.className='muted';
+    on.addEventListener('change',()=>{ put(path, on.checked?hexToRgb(c.value):undefined); changed(); });
+    c.addEventListener('input',()=>{ on.checked=true; put(path, hexToRgb(c.value)); changed(); });
+    w.append(on,c,out);
+    return {el:w, sync(){ const v=getP(cfg,path); on.checked=Array.isArray(v); if(Array.isArray(v)) c.value=rgbToHex(v); out.textContent=Array.isArray(v)?JSON.stringify(v):'unset'; }};
+  }
+}
+
+function renderGroups(){
+  const host=$('#controls');
+  GROUPS.forEach(g=>{
+    const d=document.createElement('details'); d.className='card'; d.open=!!g.open;
+    const sm=document.createElement('summary'); sm.innerHTML=`<span>${esc(g.title)}</span><span class="count" style="margin-left:auto"></span>`;
+    const body=document.createElement('div'); body.className='body'; body.style.gap='0';
+    g.fields.forEach(([path,type,label,help,extra])=>{
+      const row=document.createElement('div'); row.className='row';
+      const top=path.split('.')[0], rest=path.split('.').slice(1).join('.');
+      row.innerHTML=`<div class="lbl"><b>${esc(label)}</b><code>config[${esc(top)}]${rest?'.'+esc(rest):''}</code>${help?`<p>${esc(help)}</p>`:''}</div>`;
+      const ctl=buildControl(path,type,extra); const cw=document.createElement('div'); cw.className='ctl'; cw.appendChild(ctl.el); row.appendChild(cw);
+      body.appendChild(row);
+      views[path]={row, sync:ctl.sync, count:sm.querySelector('.count'), group:g.title};
+    });
+    d.append(sm,body); host.appendChild(d);
+  });
+}
+
+function renderRecipes(){
+  const el=$('#recipes');
+  RECIPES.forEach((r,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.dataset.i=i;
+    b.innerHTML=esc(r.name)+(r.tag?`<small>preset</small>`:'');
+    b.addEventListener('click',()=>{
+      const active=recipeActive(r);
+      if(r.reset){ cfg={}; Object.entries(r.set).forEach(([p,v])=>put(p,v)); toast('Loaded '+r.name); }
+      else if(active){ Object.keys(r.set).forEach(p=>put(p,undefined)); }
+      else Object.entries(r.set).forEach(([p,v])=>put(p,v));
+      changed();
+    });
+    el.appendChild(b); });
+}
+const recipeActive = r => Object.entries(r.set).every(([p,v])=>JSON.stringify(getP(cfg,p))===JSON.stringify(v));
+
+/* output */
+function params(){
+  const keys=Object.keys(cfg).sort((a,b)=>{ const ia=ORDER.indexOf(a), ib=ORDER.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
+  const out=[];
+  if(base.widget) out.push(['provider', {...(cfg.provider||{}), widgetId:base.widget}]);
+  keys.forEach(k=>{ if(k==='provider'){ if(!base.widget) out.push([k,cfg[k]]); return; } out.push([k,cfg[k]]); });
+  return out;
+}
+function buildUrl(mode){
+  const head=`https://${base.host}/p/${encodeURIComponent(base.pid)}/embedPlaykitJs/uiconf_id/${encodeURIComponent(base.ui)}?iframeembed=true&entry_id=${encodeURIComponent(base.entry)}`;
+  const tail=params().map(([k,v])=>{ const j=JSON.stringify(v);
+    return mode==='encoded' ? `config%5B${encodeURIComponent(k)}%5D=${encodeURIComponent(j)}` : `config[${k}]=${j}`; });
+  return [head,...tail].join('&');
+}
+function prettyUrl(u){ // one param per line for reading; copy uses the real string
+  return u.split('&').map((s,i)=>{ const [k,...v]=s.split('='); const val=v.join('=');
+    return (i?'<span class="h">&amp;</span>':'')+`<span class="k">${esc(k)}</span>=<span class="v">${esc(val)}</span>`; }).join('\n');
+}
+function iframeCode(){
+  const u=buildUrl('encoded').replace(/&/g,'&amp;');
+  return `<iframe\n  src="${u}"\n  width="${base.w||1280}" height="${base.h||720}"\n  allow="autoplay *; fullscreen *; encrypted-media *"\n  allowfullscreen frameborder="0"\n  title="Kaltura player"></iframe>`;
+}
+
+function lint(){
+  const n=[]; const g=p=>getP(cfg,p);
+  if(g('playback.autoplay')===true && g('playback.muted')!==true)
+    n.push(['warn','Autoplay with sound: Chrome, Safari and Edge block this unless the viewer has interacted with the site. With the muted fallback on, the player starts muted instead. Venue PCs can lift the block with Chrome’s --autoplay-policy=no-user-gesture-required flag or a kiosk policy.']);
+  if(g('playback.autoplay')===true && g('playback.allowMutedAutoPlay')===false && g('playback.muted')!==true)
+    n.push(['warn','Muted fallback is off, so a blocked autoplay will leave the player paused.']);
+  const mn=g('abr.restrictions.minHeight'), mx=g('abr.restrictions.maxHeight');
+  if(mn!=null && mx!=null && mn>mx) n.push(['warn','Min height is above max height, so no rendition can match.']);
+  else if(mn!=null && mn===mx) n.push(['info',`Locked to ${mn}p. This only holds if the entry has a ${mn}p flavor; check the entry’s flavors in KMC.`]);
+  if(g('playback.captionsDisplay')===true && !g('playback.textLanguage')) n.push(['info','Captions are on but no language is set, so the player picks the default track.']);
+  if(g('playback.loop')===true) n.push(['info','Loop is on. Remove it before going live if the session should end.']);
+  if(g('playback.options.html5.hls.startLevel')>0)
+    n.push(['info',`Starts on rendition ${g('playback.options.html5.hls.startLevel')} (counting from 0 = lowest). The number points at a different quality on entries with more renditions; check the flavors on each event entry.`]);
+  if(g('playback.options.html5.hls.testBandwidth')===false && g('playback.options.html5.hls.startLevel')==null)
+    n.push(['info','Turning the speed test off does not change the starting rendition on this player. Set Start rendition index (HLS) instead.']);
+  if(g('abr.enabled')===false && (mn!=null||mx!=null)) n.push(['warn','ABR is off, so the height restrictions may not apply.']);
+  $('#notes').innerHTML=n.map(([t,m])=>`<li class="${t}">${esc(m)}</li>`).join('');
+}
+
+let reloadTimer;
+function changed(){
+  Object.values(views).forEach(v=>{ v.sync(); });
+  Object.entries(views).forEach(([p,v])=>v.row.classList.toggle('set', getP(cfg,p)!==undefined));
+  const counts={}; Object.entries(views).forEach(([p,v])=>{ counts[v.group]=(counts[v.group]||0)+(getP(cfg,p)!==undefined?1:0); });
+  Object.values(views).forEach(v=>{ v.count.textContent=counts[v.group]?counts[v.group]+' set':''; });
+  document.querySelectorAll('#recipes .chip').forEach(b=>b.classList.toggle('on', recipeActive(RECIPES[b.dataset.i])));
+  const url=buildUrl(enc);
+  $('#url-out').innerHTML=prettyUrl(url);
+  $('#open-url').href=buildUrl('encoded');
+  $('#iframe-out').textContent=iframeCode();
+  if(document.activeElement!==$('#json-out')) $('#json-out').value=JSON.stringify(cfg,null,2);
+  lint(); save();
+  if($('#auto').checked){ clearTimeout(reloadTimer); reloadTimer=setTimeout(loadPlayer,600); }
+}
+
+function loadPlayer(){
+  const st=$('#stage'); st.querySelector('iframe')?.remove();
+  const f=document.createElement('iframe'); f.src=buildUrl('encoded'); f.allow='autoplay *; fullscreen *; encrypted-media *'; f.allowFullscreen=true; f.title='Kaltura player preview';
+  st.appendChild(f); $('#idle').hidden=true;
+}
+
+/* import */
+function importUrl(raw){
+  let s=raw.replace(/\s+/g,'').replace(/[“”„″]/g,'"').replace(/[‘’]/g,"'");
+  const fixedQuotes = s!==raw.replace(/\s+/g,'');
+  if(!/^https?:/i.test(s)) s='https://'+s.replace(/^\/+/,'');
+  let u; try{ u=new URL(s); }catch(e){ return 'That is not a URL I can read.'; }
+  const m=u.pathname.match(/\/p\/(\d+)\/embedPlaykitJs\/uiconf_id\/(\d+)/i);
+  const next={}; const bad=[];
+  base.host=u.host;
+  if(m){ base.pid=m[1]; base.ui=m[2]; }
+  if(u.searchParams.get('entry_id')) base.entry=u.searchParams.get('entry_id');
+  for(const [k,v] of u.searchParams){
+    const km=k.match(/^config\[(.+)\]$/); if(!km) continue;
+    let val; try{ val=JSON.parse(v); }catch(e){ val=v; bad.push(km[1]); }
+    if(km[1]==='provider' && val && typeof val==='object'){ if(val.widgetId) base.widget=val.widgetId; const {widgetId,...rest}=val; if(Object.keys(rest).length) next.provider=rest; continue; }
+    if(next[km[1]] && typeof next[km[1]]==='object' && typeof val==='object') Object.assign(next[km[1]],val); else next[km[1]]=val;
+  }
+  cfg=next; syncBase(); changed();
+  let msg=`Imported ${Object.keys(next).length} config block${Object.keys(next).length===1?'':'s'}.`;
+  if(fixedQuotes) msg+=' Replaced curly quotes with straight ones; the player cannot read curly quotes.';
+  if(bad.length) msg+=` Could not parse JSON for: ${bad.join(', ')} (kept as text).`;
+  return msg;
+}
+
+/* base fields */
+function syncBase(){ $('#b-host').value=base.host; $('#b-pid').value=base.pid; $('#b-ui').value=base.ui; $('#b-entry').value=base.entry; $('#b-widget').value=base.widget||''; $('#b-w').value=base.w||1280; $('#b-h').value=base.h||720; }
+[['#b-host','host'],['#b-pid','pid'],['#b-ui','ui'],['#b-entry','entry'],['#b-widget','widget'],['#b-w','w'],['#b-h','h']].forEach(([s,k])=>
+  $(s).addEventListener('input',e=>{ base[k]=e.target.value.trim(); changed(); }));
+
+/* persistence: per-viewer convenience only */
+function save(){ try{ localStorage.setItem('kel-state-2',JSON.stringify({base,cfg,enc})); }catch(e){} }
+function restore(){ try{ const s=JSON.parse(localStorage.getItem('kel-state-2')||'null'); if(s){ base={...DEFAULT_BASE,...s.base}; cfg=s.cfg||{}; enc=s.enc||'readable'; return true; } }catch(e){} return false; }
+
+/* copy */
+function copy(text,label){
+  const done=()=>toast(label+' copied');
+  if(navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done,()=>fallback());
+  else fallback();
+  function fallback(){ const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Select the text and copy it manually'); } t.remove(); }
+}
+let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1800); }
+
+/* wire up */
+renderRecipes(); renderGroups();
+if(!restore()) importUrl('https://cdnapisec.kaltura.com/p/2171811/embedPlaykitJs/uiconf_id/54927872?iframeembed=true&entry_id=1_596409k5&config[provider]={%22widgetId%22:%221_c8459zki%22}');
+syncBase();
+document.querySelectorAll('#enc button').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.v===enc));
+  b.addEventListener('click',()=>{ enc=b.dataset.v; document.querySelectorAll('#enc button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); changed(); }); });
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
+  document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.tab); }));
+$('#copy-url').addEventListener('click',()=>copy(buildUrl(enc),'URL'));
+$('#copy-iframe').addEventListener('click',()=>copy(iframeCode(),'Embed code'));
+$('#apply-json').addEventListener('click',()=>{ try{ const v=JSON.parse($('#json-out').value.replace(/[“”]/g,'"')); if(typeof v!=='object'||Array.isArray(v)||!v) throw new Error('Top level must be an object.'); cfg=v; $('#json-msg').textContent=''; $('#json-out').blur(); changed(); toast('Config applied'); }catch(e){ $('#json-msg').textContent='Invalid JSON: '+e.message; } });
+$('#btn-imp').addEventListener('click',()=>{ $('#imp-msg').textContent=importUrl($('#imp').value); });
+$('#btn-reset').addEventListener('click',()=>{ cfg={}; changed(); toast('All options cleared'); });
+$('#btn-default').addEventListener('click',()=>{ base={...DEFAULT_BASE}; cfg={}; syncBase(); changed(); toast('Reset to test URL'); });
+$('#btn-load').addEventListener('click',loadPlayer);
+$('#auto').addEventListener('change',e=>{ if(e.target.checked) loadPlayer(); });
+changed();
+})();
+</script>
+
+</body>
+</html>
