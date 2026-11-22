@@ -1,0 +1,1167 @@
+<meta charset="utf-8">
+<title>Speedcube Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky tab bar over a single working surface per tab; timer = stage + side rail, learning = filter bar + case grid. */
+:root {
+  --bg: #101214; --panel: #181b1e; --ink: #eceeea; --muted: #959d97; --line: #2a2f33;
+  --accent: #ff6a2b; --accent-ink: #160a03; --soft: #22262a; --body: #050607; --mask: #4a5050; --arrow: #14171a; --ins: #7fa8ff;
+  --ok: #3cc47a; --warn: #f0a733; --bad: #ff5d6e; --hold: #ff5d6e; --ready: #3cc47a; color-scheme: dark;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* sticker colours */
+.cw { fill: #f7f7f2 } .cy { fill: #ffd500 } .cg { fill: #00a651 } .cb { fill: #0b55c4 } .cr { fill: #c8102e } .co { fill: #ff6a00 } .cx { fill: var(--mask) }
+.body { fill: var(--body) }
+.arrow-line { stroke: var(--arrow); fill: none; } .arrow-head { fill: var(--arrow); stroke: none; }
+svg.dg { display: block; width: 100%; height: auto; }
+
+/* header */
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar { display: flex; align-items: center; gap: 24px; min-height: 60px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-stretch: 125%; font-size: 18px; letter-spacing: -0.01em; white-space: nowrap; }
+.brand-mark { display: grid; grid-template-columns: repeat(3, 7px); gap: 2px; }
+.brand-mark i { width: 7px; height: 7px; border-radius: 1.5px; background: var(--ink); }
+.brand-mark i:nth-child(5) { background: var(--accent); }
+nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-left: auto; }
+nav button { border: 0; background: none; padding: 8px 14px; border-radius: 6px; font-family: var(--f-display); font-stretch: 112%; font-weight: 600; font-size: 14px; color: var(--muted); white-space: nowrap; }
+nav button:hover { color: var(--ink); background: var(--soft); }
+nav button[aria-selected="true"] { color: var(--ink); background: var(--panel); box-shadow: inset 0 -2px 0 var(--accent); }
+main { padding-block: 24px 64px; }
+section[hidden] { display: none; }
+
+/* shared */
+.eyebrow { font-family: var(--f-display); font-stretch: 112%; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.btn { border: 1px solid var(--line); background: var(--panel); padding: 7px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ghost { background: none; }
+.alg { font-family: var(--f-mono); font-size: 13px; line-height: 1.55; word-spacing: 0.05em; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--panel); }
+
+/* ===== timer ===== */
+.timer-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.scramble-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 10px; }
+.scramble-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scramble-head .eyebrow { margin-right: auto; }
+.scramble { font-family: var(--f-mono); font-size: clamp(17px, 2.2vw, 22px); font-weight: 500; letter-spacing: 0.01em; word-spacing: 0.25em; line-height: 1.6; }
+.stage { position: relative; display: grid; place-items: center; min-height: 340px; user-select: none; -webkit-user-select: none; touch-action: manipulation; cursor: pointer; border-radius: 10px; margin-top: 8px; }
+.clock { font-family: var(--f-display); font-stretch: 125%; font-weight: 700; font-size: clamp(64px, 13vw, 150px); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; transition: color .08s; }
+.clock.holding { color: var(--hold); } .clock.ready { color: var(--ready); } .clock.inspect { color: var(--warn); }
+.stage:focus-visible { outline: 1px solid var(--line); outline-offset: 0; }
+.stage-hint { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: var(--muted); font-size: 13px; }
+.stage.running .stage-hint, .stage.running ~ .stats { opacity: 0.15; }
+.stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; transition: opacity .2s; }
+.stat { padding: 12px 14px; border-left: 1px solid var(--line); min-width: 0; }
+.stat:first-child { border-left: 0; }
+.stat b { display: block; font-family: var(--f-display); font-stretch: 112%; font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rail { display: grid; gap: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.panel-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.panel-head .eyebrow { margin-right: auto; }
+.net { max-width: 300px; margin: 0 auto; }
+.toggle { display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.times { max-height: 360px; overflow-y: auto; margin: 0 -6px; }
+.times table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+.times th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; position: sticky; top: 0; background: var(--panel); }
+.times td { padding: 5px 6px; border-top: 1px solid var(--line); }
+.times td.t { font-family: var(--f-mono); font-weight: 600; }
+.times td.n { color: var(--muted); width: 32px; }
+.times .acts { text-align: right; white-space: nowrap; }
+.times .acts button { border: 0; background: none; color: var(--muted); font-size: 11px; padding: 2px 5px; border-radius: 4px; font-family: var(--f-mono); }
+.times .acts button:hover { background: var(--soft); color: var(--ink); }
+.times .acts button.on { color: var(--accent); font-weight: 600; }
+.times tr.best td.t { color: var(--ok); }
+.empty { color: var(--muted); font-size: 13px; padding: 12px 6px 6px; }
+
+/* ===== learn ===== */
+.learn-head { display: flex; align-items: end; gap: 24px; flex-wrap: wrap; margin-bottom: 18px; }
+.learn-head h1 { font-family: var(--f-display); font-stretch: 125%; font-weight: 800; font-size: clamp(28px, 4vw, 40px); line-height: 1.05; margin: 0 0 6px; letter-spacing: -0.02em; text-wrap: balance; }
+.learn-head p { margin: 0; color: var(--muted); max-width: 62ch; }
+.learn-head .intro { flex: 1 1 420px; min-width: 0; }
+.progress { flex: 0 1 260px; display: grid; gap: 6px; }
+.progress-track { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; display: flex; }
+.progress-track i { display: block; height: 100%; }
+.progress-legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+.filters { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; color: var(--muted); }
+.chip:hover { color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.filters .spacer { flex: 1; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; grid-template-rows: auto auto 1fr; gap: 8px; cursor: pointer; text-align: left; transition: border-color .12s, transform .12s; }
+.card:hover { border-color: var(--muted); transform: translateY(-1px); }
+.card .fig { padding: 4px 14px; }
+.card-top { display: flex; align-items: center; gap: 8px; }
+.card-name { font-family: var(--f-display); font-stretch: 118%; font-weight: 700; font-size: 15px; }
+.card-group { font-size: 11.5px; color: var(--muted); margin-left: auto; text-align: right; line-height: 1.2; }
+.card .alg { font-size: 12px; color: var(--ink); }
+.ins { color: var(--ins); font-weight: 600; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.two figure { margin: 0; display: grid; gap: 2px; }
+.two figcaption { text-align: center; font-size: 11px; color: var(--muted); }
+.card .fig:has(.two) { padding: 4px 0; }
+.modal .fig:has(.two) { width: min(400px, 100%); }
+.grid.wide { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.alts { display: grid; gap: 6px; font-size: 14px; }
+.alts small { display: block; color: var(--muted); font-family: var(--f-body); }
+.status { border: 0; padding: 0; background: none; display: inline-flex; align-items: center; }
+.status i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--mask); display: block; }
+.status[data-s="1"] i { border-color: var(--warn); background: var(--warn); }
+.status[data-s="2"] i { border-color: var(--ok); background: var(--ok); }
+.group-title { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; margin-top: 10px; }
+.group-title:first-child { margin-top: 0; }
+.group-title h2 { font-family: var(--f-display); font-stretch: 118%; font-weight: 700; font-size: 16px; margin: 0; }
+.group-title span { color: var(--muted); font-size: 12px; }
+.none { grid-column: 1/-1; color: var(--muted); padding: 32px 0; text-align: center; }
+
+/* modal */
+.overlay { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(6px); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal { width: min(560px, 100%); max-height: 100%; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 16px; box-shadow: 0 24px 60px rgb(0 0 0 / 0.18); }
+.modal-head { display: flex; align-items: center; gap: 10px; }
+.modal-head h3 { margin: 0; font-family: var(--f-display); font-stretch: 125%; font-weight: 800; font-size: 24px; }
+.modal-head .sub { color: var(--muted); font-size: 13px; }
+.modal-head .x { margin-left: auto; }
+.modal .fig { width: min(260px, 70%); margin: 0 auto; }
+.kv { display: grid; gap: 4px; }
+.kv .alg { font-size: 15px; background: var(--soft); border-radius: 8px; padding: 10px 12px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 7px 12px; font-size: 13px; border-left: 1px solid var(--line); }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.reveal { border: 1px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; color: var(--muted); background: none; width: 100%; }
+.drill-meta { color: var(--muted); font-size: 12.5px; text-align: center; font-variant-numeric: tabular-nums; }
+.auf { color: var(--accent); font-weight: 600; }
+
+/* notation */
+.notation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.move { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 6px; }
+.move .fig { padding: 0 18px; }
+.move b { font-family: var(--f-mono); font-size: 18px; }
+.move span { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.prose { max-width: 70ch; display: grid; gap: 10px; margin-bottom: 22px; }
+.prose p { margin: 0; }
+.legend-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 28px; }
+
+/* ===== PLL recognition guide ===== */
+.guide { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; display: grid; gap: 18px; }
+.guide-head { display: flex; align-items: center; gap: 12px; }
+.guide-head > div { margin-right: auto; }
+.guide h2 { font-family: var(--f-display); font-stretch: 118%; font-weight: 700; font-size: 18px; margin: 2px 0 0; }
+.guide h3 { font-family: var(--f-display); font-stretch: 112%; font-weight: 700; font-size: 14px; margin: 0 0 6px; }
+.guide p { margin: 0; font-size: 14px; color: var(--muted); max-width: 68ch; }
+.guide p + p { margin-top: 8px; }
+.guide p b { color: var(--ink); font-weight: 600; }
+.g-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px 28px; }
+.g-exs { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 12px; }
+.g-ex { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.g-ex b { font-weight: 600; color: var(--ok); }
+.g-ex.no b { color: var(--bad); }
+.g-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 18px 28px; }
+.g-list { min-width: 0; }
+.g-list.full { grid-column: 1 / -1; }
+.g-subs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px 28px; margin-top: 10px; align-items: start; }
+.g-sub-title { font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+.g-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 8px; padding: 9px 8px; margin: 0 -8px; border-top: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
+.g-row:hover { background: var(--soft); }
+.g-row.long { grid-template-columns: 96px minmax(0, 1fr); }
+.g-name { font-family: var(--f-display); font-stretch: 118%; font-weight: 700; font-size: 15px; line-height: 1.35; }
+.g-text { font-size: 13.5px; line-height: 1.4; }
+.g-row .strip { grid-column: 2; margin-top: 6px; }
+svg.strip { display: block; height: auto; max-width: 100%; }
+.strip-label { font-family: var(--f-body); font-size: .76px; fill: var(--muted); }
+
+/* level toggle */
+.level { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; flex: none; }
+.level button { border: 0; background: none; padding: 6px 10px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.level button:hover { color: var(--ink); }
+.level button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.guide ol { margin: 8px 0 0; padding-left: 20px; font-size: 14px; color: var(--muted); max-width: 68ch; }
+.guide li + li { margin-top: 5px; }
+
+@media (max-width: 960px) {
+  .timer-grid { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat:nth-child(4) { border-left: 0; }
+  .stat:nth-child(n+4) { border-top: 1px solid var(--line); }
+  .stage { min-height: 260px; }
+}
+@media (max-width: 560px) {
+  .grid.wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bar { gap: 6px; padding-block: 8px; }
+  nav { margin-left: 0; width: 100%; order: 2; }
+  .level { margin-left: auto; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .card { padding: 9px; }
+  .card .fig { padding: 2px 6px; }
+  .card-group { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="wrap bar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>Speedcube Lab</div>
+    <nav role="tablist" id="tabs">
+      <button role="tab" data-tab="timer">Timer</button>
+      <button role="tab" data-tab="f2l">F2L</button>
+      <button role="tab" data-tab="oll">OLL</button>
+      <button role="tab" data-tab="pll">PLL</button>
+      <button role="tab" data-tab="notation">Notation</button>
+    </nav>
+    <div class="level" id="level" role="group" aria-label="Level"><button type="button" data-level="beginner">Beginner</button><button type="button" data-level="advanced">Advanced</button></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="tab-timer" data-panel="timer">
+    <div class="timer-grid">
+      <div style="min-width:0">
+        <div class="scramble-card">
+          <div class="scramble-head">
+            <span class="eyebrow" id="scr-label">Scramble · 20 moves</span>
+            <button class="btn ghost" id="scr-copy" type="button">Copy</button>
+            <button class="btn" id="scr-new" type="button">New scramble</button>
+          </div>
+          <div class="scramble" id="scramble"></div>
+        </div>
+        <div class="stage" id="stage" tabindex="0" aria-label="Timer. Hold space, then release to start.">
+          <div class="clock" id="clock">0.00</div>
+          <div class="stage-hint" id="hint">Hold <kbd>Space</kbd> until the time turns green, then release to start. Any key stops it.</div>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+      <aside class="rail">
+        <div class="panel">
+          <div class="panel-head"><span class="eyebrow">Preview</span><span class="eyebrow" style="margin:0;letter-spacing:.06em">White top · green front</span></div>
+          <div class="net" id="net"></div>
+        </div>
+        <div class="panel">
+          <label class="toggle"><input type="checkbox" id="opt-inspect"> 15-second WCA inspection (+2 after 15s, DNF after 17s)</label>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="eyebrow">Session</span><button class="btn ghost" id="clear" type="button">Clear</button></div>
+          <div class="times" id="times"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="tab-f2l" data-panel="f2l" hidden></section>
+  <section id="tab-oll" data-panel="oll" hidden></section>
+  <section id="tab-pll" data-panel="pll" hidden></section>
+
+  <section id="tab-notation" data-panel="notation" hidden>
+    <div class="learn-head"><div class="intro">
+      <h1>Reading the algorithms</h1>
+      <p>Every algorithm here is written in standard notation. Hold the cube with the yellow face up and green facing you, then read moves left to right.</p>
+    </div></div>
+    <div class="prose">
+      <p>A letter on its own means turn that face a quarter turn clockwise, as if you were looking straight at it. An apostrophe (<span class="alg">R'</span>) means counter-clockwise. A 2 (<span class="alg">R2</span>) means a half turn, and direction doesn't matter.</p>
+      <p>Lower-case letters (<span class="alg">r</span>, also written <span class="alg">Rw</span>) turn two layers together. <span class="alg">M</span>, <span class="alg">E</span> and <span class="alg">S</span> turn only a middle slice. <span class="alg">x</span>, <span class="alg">y</span> and <span class="alg">z</span> rotate the whole cube.</p>
+    </div>
+    <div class="notation-grid" id="moves"></div>
+  </section>
+</main>
+
+<div id="modal-root"></div>
+
+<script>
+// ==== ENGINE START ====
+const Cube = (() => {
+  // faces: 0 U, 1 R, 2 F, 3 D, 4 L, 5 B ; sticker index = face*9 + r*3 + c
+  function coords(f, r, c) {
+    switch (f) {
+      case 0: return [[c - 1, 1, r - 1], [0, 1, 0]];
+      case 1: return [[1, 1 - r, 1 - c], [1, 0, 0]];
+      case 2: return [[c - 1, 1 - r, 1], [0, 0, 1]];
+      case 3: return [[c - 1, -1, 1 - r], [0, -1, 0]];
+      case 4: return [[-1, 1 - r, c - 1], [-1, 0, 0]];
+      case 5: return [[1 - c, 1 - r, -1], [0, 0, -1]];
+    }
+  }
+  const STK = [];
+  const index = {};
+  for (let f = 0; f < 6; f++) for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+    const [p, n] = coords(f, r, c);
+    const i = STK.length;
+    STK.push({ p, n, f });
+    index[p.join() + '|' + n.join()] = i;
+  }
+  function rot(v, axis, s) {
+    const [x, y, z] = v;
+    if (axis === 0) return s > 0 ? [x, -z, y] : [x, z, -y];
+    if (axis === 1) return s > 0 ? [z, y, -x] : [-z, y, x];
+    return s > 0 ? [-y, x, z] : [y, -x, z];
+  }
+  const ALL = [-1, 0, 1];
+  const DEF = {
+    U: [1, [1], -1], D: [1, [-1], 1], E: [1, [0], 1], u: [1, [1, 0], -1], d: [1, [-1, 0], 1], y: [1, ALL, -1],
+    R: [0, [1], -1], L: [0, [-1], 1], M: [0, [0], 1], r: [0, [1, 0], -1], l: [0, [-1, 0], 1], x: [0, ALL, -1],
+    F: [2, [1], -1], B: [2, [-1], 1], S: [2, [0], -1], f: [2, [1, 0], -1], b: [2, [-1, 0], 1], z: [2, ALL, -1],
+  };
+  const PERM = {};
+  for (const k in DEF) {
+    const [axis, layers, s] = DEF[k];
+    const src = new Array(54);
+    STK.forEach((st, i) => {
+      if (layers.includes(st.p[axis])) {
+        const j = index[rot(st.p, axis, s).join() + '|' + rot(st.n, axis, s).join()];
+        src[j] = i;
+      } else src[i] = i;
+    });
+    PERM[k] = src;
+  }
+  const solved = () => Array.from({ length: 54 }, (_, i) => i);
+  function parse(alg) {
+    const out = [];
+    const re = /([URFDLBMESxyz])w|([URFDLBMESxyzurfdlb])|(\d+)|(')/g;
+    const s = alg.replace(/[()\[\]]/g, ' ');
+    let m;
+    while ((m = re.exec(s))) {
+      if (m[1]) out.push({ m: m[1].toLowerCase(), n: 1 });
+      else if (m[2]) out.push({ m: m[2], n: 1 });
+      else if (m[3] && out.length) out[out.length - 1].n = (out[out.length - 1].n * (+m[3])) % 4;
+      else if (m[4] && out.length) out[out.length - 1].n = (4 - out[out.length - 1].n) % 4;
+    }
+    return out;
+  }
+  function applyMoves(state, moves) {
+    let s = state.slice();
+    for (const { m, n } of moves) for (let k = 0; k < n; k++) {
+      const p = PERM[m];
+      s = p.map(i => s[i]);
+    }
+    return s;
+  }
+  const apply = (state, alg) => applyMoves(state, parse(alg));
+  const fmt = ({ m, n }) => m + (n === 2 ? '2' : n === 3 ? "'" : '');
+  function invert(alg) {
+    return parse(alg).reverse().map(({ m, n }) => fmt({ m, n: (4 - n) % 4 })).filter((_, i, a) => true).join(' ');
+  }
+  // the state a learner faces: the alg (with optional post-AUF) solves it
+  const caseState = alg => apply(solved(), invert(alg));
+  const faceOf = id => Math.floor(id / 9);
+  function randomScramble(len = 20) {
+    const faces = 'URFDLB', axis = { U: 0, D: 0, R: 1, L: 1, F: 2, B: 2 };
+    const mods = ['', "'", '2'];
+    const out = [];
+    while (out.length < len) {
+      const f = faces[Math.floor(Math.random() * 6)];
+      const a = out.length ? out[out.length - 1][0] : null;
+      const b = out.length > 1 ? out[out.length - 2][0] : null;
+      if (a === f) continue;
+      if (a && b && axis[a] === axis[f] && axis[b] === axis[f]) continue;
+      out.push(f + mods[Math.floor(Math.random() * 3)]);
+    }
+    return out.join(' ');
+  }
+  return { STK, PERM, solved, parse, apply, applyMoves, invert, caseState, faceOf, randomScramble, fmt };
+})();
+// ==== ENGINE END ====
+
+// ==== DATA START ====
+const OLL = [
+  [1,'Dot',"R U2 R2 F R F' U2 R' F R F'"],
+  [2,'Dot',"F R U R' U' F' f R U R' U' f'"],
+  [3,'Dot',"f R U R' U' f' U' F R U R' U' F'"],
+  [4,'Dot',"f R U R' U' f' U F R U R' U' F'"],
+  [5,'Square',"r' U2 R U R' U r"],
+  [6,'Square',"r U2 R' U' R U' r'"],
+  [7,'Small Lightning',"r U R' U R U2 r'"],
+  [8,'Small Lightning',"l' U' L U' L' U2 l"],
+  [9,'Fish',"R U R' U' R' F R2 U R' U' F'"],
+  [10,'Fish',"R U R' U R' F R F' R U2 R'"],
+  [11,'Small Lightning',"r U R' U R' F R F' R U2 r'"],
+  [12,'Small Lightning',"M' R' U' R U' R' U2 R U' M"],
+  [13,'Knight Move',"F U R U' R2 F' R U R U' R'"],
+  [14,'Knight Move',"R' F R U R' F' R F U' F'"],
+  [15,'Knight Move',"r' U' r R' U' R U r' U r"],
+  [16,'Knight Move',"r U r' R U R' U' r U' r'"],
+  [17,'Dot',"R U R' U R' F R F' U2 R' F R F'"],
+  [18,'Dot',"r U R' U R U2 r2 U' R U' R' U2 r"],
+  [19,'Dot',"r' R U R U R' U' M' R' F R F'"],
+  [20,'Dot',"r U R' U' M2 U R U' R' U' M'"],
+  [21,'Cross',"R U2 R' U' R U R' U' R U' R'"],
+  [22,'Cross',"R U2 R2 U' R2 U' R2 U2 R"],
+  [23,'Cross',"R2 D' R U2 R' D R U2 R"],
+  [24,'Cross',"r U R' U' r' F R F'"],
+  [25,'Cross',"F' r U R' U' r' F R"],
+  [26,'Cross',"R U2 R' U' R U' R'"],
+  [27,'Cross',"R U R' U R U2 R'"],
+  [28,'Corners Oriented',"r U R' U' M U R U' R'"],
+  [29,'Awkward',"R U R' U' R U' R' F' U' F R U R'"],
+  [30,'Awkward',"F R' F R2 U' R' U' R U R' F2"],
+  [31,'P Shape',"R' U' F U R U' R' F' R"],
+  [32,'P Shape',"L U F' U' L' U L F L'"],
+  [33,'T Shape',"R U R' U' R' F R F'"],
+  [34,'C Shape',"R U R2 U' R' F R U R U' F'"],
+  [35,'Fish',"R U2 R2 F R F' R U2 R'"],
+  [36,'W Shape',"L' U' L U' L' U L U L F' L' F"],
+  [37,'Fish',"F R' F' R U R U' R'"],
+  [38,'W Shape',"R U R' U R U' R' U' R' F R F'"],
+  [39,'Big Lightning',"L F' L' U' L U F U' L'"],
+  [40,'Big Lightning',"R' F R U R' U' F' U R"],
+  [41,'Awkward',"R U R' U R U2 R' F R U R' U' F'"],
+  [42,'Awkward',"R' U' R U' R' U2 R F R U R' U' F'"],
+  [43,'P Shape',"F' U' L' U L F"],
+  [44,'P Shape',"F U R U' R' F'"],
+  [45,'T Shape',"F R U R' U' F'"],
+  [46,'C Shape',"R' U' R' F R F' U R"],
+  [47,'Small L',"R' U' R' F R F' R' F R F' U R"],
+  [48,'Small L',"F R U R' U' R U R' U' F'"],
+  [49,'Small L',"r U' r2 U r2 U r2 U' r"],
+  [50,'Small L',"r' U r2 U' r2 U' r2 U r'"],
+  [51,'Line',"F U R U' R' U R U' R' F'"],
+  [52,'Line',"R U R' U R U' B U' B' R'"],
+  [53,'Small L',"l' U2 L U L' U' L U L' U l"],
+  [54,'Small L',"r U2 R' U' R U R' U' R U' r'"],
+  [55,'Line',"R' F R U R U' R2 F' R2 U' R' U R U R'"],
+  [56,'Line',"r' U' r U' R' U R U' R' U R r' U r"],
+  [57,'Corners Oriented',"R U R' U' M' U R U' r'"],
+];
+const PLL = [
+  ['Aa','Corners only',"x L2 D2 L' U' L D2 L' U L' x'"],
+  ['Ab','Corners only',"x' L2 D2 L U L' D2 L U' L x"],
+  ['E','Corners only',"x' L' U L D' L' U' L D L' U' L D' L' U L D x"],
+  ['H','Edges only',"M2 U M2 U2 M2 U M2"],
+  ['Ua','Edges only',"M2 U M U2 M' U M2"],
+  ['Ub','Edges only',"M2 U' M U2 M' U' M2"],
+  ['Z','Edges only',"M' U M2 U M2 U M' U2 M2"],
+  ['T','Adjacent swap',"R U R' U' R' F R2 U' R' U' R U R' F'"],
+  ['F','Adjacent swap',"R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R"],
+  ['Ja','Adjacent swap',"x R2 F R F' R U2 r' U r U2 x'"],
+  ['Jb','Adjacent swap',"R U R' F' R U R' U' R' F R2 U' R'"],
+  ['Ra','Adjacent swap',"R U' R' U' R U R D R' U' R D' R' U2 R'"],
+  ['Rb','Adjacent swap',"R2 F R U R U' R' F' R U2 R' U2 R"],
+  ['Y','Diagonal swap',"F R U' R' U' R U R' F' R U R' U' R' F R F'"],
+  ['V','Diagonal swap',"R U' R U R' D R D' R U' D R2 U R2 D' R2"],
+  ['Na','Diagonal swap',"R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'"],
+  ['Nb','Diagonal swap',"R' U R U' R' F' U' F R U R' F R' F' R U' R"],
+  ['Ga','G perms',"R2 U R' U R' U' R U' R2 U' D R' U R D'"],
+  ['Gb','G perms',"R' U' R U D' R2 U R' U R U' R U' R2 D"],
+  ['Gc','G perms',"R2 U' R U' R U R' U R2 U D' R U' R' D"],
+  ['Gd','G perms',"R U R' U' D R2 U' R U' R' U R' U R2 D'"],
+];
+// ==== DATA END ====
+// Beginner sets: J Perm's 2-look pages (jperm.net/algs/2look/oll and /pll), learning order for corners
+const BEGIN_OLL = [
+  ['I-Shape', 'Step 1: Edges', "F R U R' U' F'"],
+  ['L-Shape', 'Step 1: Edges', "f R U R' U' f'"],
+  ['Dot Shape', 'Step 1: Edges', "F R U R' U' F' f R U R' U' f'"],
+  ['Sune', 'Step 2: Corners', "R U R' U R U2 R'"],
+  ['Antisune', 'Step 2: Corners', "R U2 R' U' R U' R'"],
+  ['T', 'Step 2: Corners', "r U R' U' r' F R F'"],
+  ['L', 'Step 2: Corners', "F R' F' r U R U' r'"],
+  ['U', 'Step 2: Corners', "R2 D R' U2 R D' R' U2 R'"],
+  ['Pi', 'Step 2: Corners', "R U2 R2 U' R2 U' R2 U2 R"],
+  ['H', 'Step 2: Corners', "R U R' U R U' R' U R U2 R'"],
+];
+const BEGIN_PLL = [
+  ['Headlights', 'Step 1: Corners', "R U R' U' R' F R2 U' R' U' R U R' F'"],
+  ['Diagonal', 'Step 1: Corners', "F R U' R' U' R U R' F' R U R' U' R' F R F'"],
+  ['H', 'Step 2: Edges', "M2 U M2 U2 M2 U M2"],
+  ['Z', 'Step 2: Edges', "M' U M2 U M2 U M' U2 M2"],
+  ['Ua', 'Step 2: Edges', "M2 U M U2 M' U M2"],
+  ['Ub', 'Step 2: Edges', "M2 U' M U2 M' U' M2"],
+];
+// Transcribed from the user's F2L sheet. "|" marks where the blue insert begins.
+// Entry: [primary, ...alternatives]; an alternative may be {a, needs:'FR'} when it is only safe with that slot empty.
+const G = ['Basic Inserts','F2L Case 1','F2L Case 2','F2L Case 3','Incorrectly Connected Pieces','Corner in Place, Edge in U Face','Edge in Place, Corner in U Face','Edge and Corner in Place'];
+const SIZES = [4,6,4,4,6,6,6,5];
+const SHEET = {
+FR: [
+["U | (R U' R')"],["y' U' | (R' U R)","y U' | (L' U L)"],["y' | (R' U' R)","y | (L' U' L)"],["| (R U R')"],
+["U' (R U' R' U) y' | (R' U' R)","y' U (R' U' R U') | (R' U' R)"],["U' (R U R' U) | (R U R')"],["U' (R U2' R' U) y' | (R' U' R)","U' (R U2' R') d | (R' U' R)"],["R' U2' R2 U R2' U R","y' U (R' U2 R) U' y | (R U R')","(R U' R' U) (R U' R') U2 | (R U' R')"],["y' U (R' U R U') | (R' U' R)"],["U' (R U' R' U) | (R U R')"],
+["(U' R U R') U2 | (R U' R')"],["y' (U R' U' R) U2' | (R' U R)","d (R' U' R) U2' | (R' U R)"],["U' (R U2' R') U2 | (R U' R')"],["y' U (R' U2 R) U2' | (R' U R)","d (R' U2 R) U2' | (R' U R)"],
+["U (R U2' R') U | (R U' R')"],["y' U' (R' U2 R) U' | (R' U R)"],["U2 (R U R' U) | (R U' R')","(R U' R') U2 | (R U R')"],["y' U2 (R' U' R) U' | (R' U R)","F' L' U2 L F"],
+["y' (R' U R) U2' y | (R U R')","(R U R') U2 (R U' R' U) | (R U' R')"],["(R U' R' U2) y' | (R' U' R)","U F (R U R' U') F' | (U R U' R')"],["(R U2 R') U' | (R U R')"],["y' (R' U2 R) U | (R' U' R)"],["U (R U' R' U') (R U' R' U) | (R U' R')","(R U R' U2') (R U R' U') | (R U R')"],["y' U' (R' U R U) (R' U R U') | (R' U R)","F (U R U' R') F' | (R U' R')"],
+["U' F' (R U R' U') R' F R","R' F' R U (R U' R') F"],["U (R U' R') U' | (F' U F)","U (R U' R') | (F R' F' R)"],["(R U' R' U) | (R U' R')"],["y' (R' U R U') | (R' U R)"],["y' (R' U' R U) | (R' U' R)","(R' F R F') U | (R U' R')"],["(R U R' U') | (R U R')"],
+["(R U' R' U) y' | (R' U R)","U' (R' F R F') | (R U' R')"],["(U R U' R') (U R U' R') | (U R U' R')"],["(U' R U' R') U2 | (R U' R')"],["U (R U R') U2 | (R U R')"],["(U' R U R') d | (R' U' R)"],["U (F' U' F) U' | (R U R')"],
+["(R U' R') d (R' U2 R) U2' | (R' U R)"],["(R U' R' U') R U R' U2 | (R U' R')","(R U R' U') R U2 R' U' | (R U R')"],["(R U' R' U) (R U2' R') U | (R U' R')","(R U R') U2' (R U' R' U) | (R U R')"],["(F' U F) U2 (R U R' U) | (R U' R')","(R U' R') F (R U R' U') F' | (R U' R')"],["(R U R' U') (R U' R') U2 y' | (R' U' R)"],
+],
+BR: [
+["y U | (R U' R')","y' U | (L U' L')"],["U' | (R' U R)"],["| (R' U' R)"],["y | (R U R')","y' | (L U L')"],
+["U (R' U' R U') | (R' U' R)"],["U (R' U R U') y | (R U R')"],["R U2' R2' U' | (R2 U' R')"],["U (R' U2 R) U' y | (R U R')"],["U (R' U R U') | (R' U' R)"],["y U' (R U' R' U) | (R U R')"],
+["y (U' R U R') U2 | (R U' R')","U r' (U R U' R') U' r"],["(U R' U' R) U2' | (R' U R)"],["y U' (R U2' R') U2 | (R U' R')"],["U (R' U2 R) U2' | (R' U R)"],
+["y U (R U2' R') U | (R U' R')"],["U' (R' U2 R) U' | (R' U R)"],["y U2 (R U R' U) | (R U' R')"],["U2 (R' U' R) U' | (R' U R)","R' F' U2 F R"],
+["(R' U R) U2' y | (R U R')","(R2' F R F' R) U2' | (R' U R)"],["y (R U' R' U2) y' | (R' U' R)",{a:"U (R U' R' U) | (R' U' R)",needs:'FR'}],["y (R U2 R') U' | (R U R')"],["(R' U2' R) U | (R' U' R)"],["(R' U' R U' y) (R U' R' U) | (R U' R')","(U R' U2' R) y (R U2' R' U) | (R U' R')"],["U' (R' U R U) (R' U R U') | (R' U R)","y F (U R U' R') F' | (R U' R')"],
+["(U' R' U R) y U | (R U' R')"],["y U (R U' R') U' | (F' U F)","y U (R U' R') | (F R' F' R)"],["y (R U' R' U) | (R U' R')","R' U2 R' F R F' R"],["(R' U R U') | (R' U R)"],["(R' U' R U) | (R' U' R)"],["y (R U R' U') | (R U R')"],
+["(R' U R' F) | (R F' R)","(R' U R U') y | (R U' R')"],["(U' R' U R) (U' R' U R) | (U' R' U R)"],["(U' R' U' R) U2 | (R' U' R)"],["U (R' U R) U2' | (R' U R)"],["y (U' R U R') d | (R' U' R)"],["U (R' U' R) y U' | (R U R')"],
+["(R' U R) d' (R U2' R') U2 | (R U' R')"],["(R' U R U') (R' U2 R U') | (R' U R)"],["(R' U' R U) (R' U2' R) U | (R' U' R)","(R' U R U) (R' U' R U2') | (R' U R)"],["(R' U R) U2' y (R U R' U) | (R U' R')"],["(R' U R U) (R' U R U') y | (R U R')"],
+],
+FL: [
+["y' U | (R U' R')","y U | (L U' L')"],["U' | (L' U L)"],["| (L' U' L)"],["y' | (R U R')","y | (L U L')"],
+["U (L' U' L U') | (L' U' L)"],["U (L' U L U') y' | (R U R')"],["L U2' L2' U' | (L2 U' L')"],["U (L' U2 L) U' y' | (R U R')"],["U (L' U L U') | (L' U' L)"],["y' U' (R U' R' U) | (R U R')"],
+["y' (U' R U R') U2 | (R U' R')",{a:"(L U L') y' (U R U' R')",needs:'BL'}],["(U L' U' L) U2' | (L' U L)"],["y' U' (R U2' R') U2 | (R U' R')"],["U (L' U2 L) U2' | (L' U L)"],
+["y' U (R U2' R') U | (R U' R')"],["U' (L' U2 L) U' | (L' U L)"],["F R U2' R' F'"],["U2 (L' U' L) U' | (L' U L)"],
+["(L' U L) U2' y' | (R U R')"],["y' (R U' R' U2) y' | (R' U' R)",{a:"(U' R U' R') U' | (L' U' L)",needs:'FR'}],["y' (R U2 R') U' | (R U R')"],["(L' U2 L) U | (L' U' L)"],["y' U (R U' R' U') (R U' R' U | R U' R')","y' (R U R' U2') (R U R' U') | (R U R')"],["U' (L' U L U) (L' U L U') | (L' U L)","y' F (U R U' R') F' | (R U' R')"],
+["(U' L' U L) d | (R U' R')"],["y' U (R U' R') U' | (F' U F)","y' U (R U' R') | (F R' F' R)"],["y' (R U' R' U) | (R U' R')"],["(L' U L U') | (L' U L)"],["(L' U' L U) | (L' U' L)"],["y' (R U R' U') | (R U R')","(r U' r' F) | (r U' r' F)"],
+["(L' U L U') y' | (R U' R')"],["(U' L' U L) (U' L' U L) | (U' L' U L)"],["(U' L' U' L) U2 | (L' U' L)"],["U (L' U L) U2' | (L' U L)"],["y' (U' R U R') d | (R' U' R)"],["U (L' U' L) y' U' | (R U R')"],
+["(L' U L U') y' (R U2' R' U2 | R U' R')"],["(L' U L U') (L' U2 L U') | (L' U L)"],["(L' U' L U) (L' U2' L) U | (L' U' L)","(L' U L U) (L' U' L U2') | (L' U L)"],["(L' U L) F R U2' R' F'"],["(L' U L U) (L' U L U') y | (L U L')"],
+],
+BL: [
+["U | (L U' L')"],["y U' | (R' U R)","y' U' | (L' U L)"],["y | (R' U' R)"],["| (L U L')"],
+["y U (R' U' R U') | (R' U' R)"],["U' (L U L' U) | (L U L')"],["y R U2' R2' U' | (R2 U' R')"],["L' U2 L2 U | (L2' U L)"],["y U (R' U R U') | (R' U' R)"],["U' (L U' L' U) | (L U L')"],
+["(U' L U L') U2 | (L U' L')"],["y (U R' U' R) U2' | (R' U R)"],["U' (L U2 L') U2 | (L U' L')"],["y U (R' U2' R) U2' | (R' U R)"],
+["U (L U2' L') U | (L U' L')"],["y U' (R' U2 R) U' | (R' U R)"],["y' F R U2' R' F'"],["y U2 (R' U' R) U' | (R' U R)","y R' F' U2 F R"],
+["y (R' U R) U2' y | (R U R')",{a:"U' (L' U L U') | (L U L')",needs:'FL',note:"Corrected: the sheet prints (L U' L') at the end, which solves a different case."}],["(L U' L' U2) y | (R' U' R)"],["(L U2 L') U' | (L U L')"],["y (R' U2' R) U | (R' U' R)"],["U (L U' L' U') (L U' L' U) | (L U' L')"],["y U' (R' U R U) (R' U R U') | (R' U R)"],
+["y' (U' L' U L) d | (R U' R')"],["U (L U' L') d' | (R' U R)"],["(L U' L' U) | (L U' L')"],["y (R' U R U') | (R' U R)"],["y (R' U' R U) | (R' U' R)"],["(L U L' U') | (L U L')"],
+["y (R' U R' F) | (R F' R)"],["(U L U' L') (U L U' L') | (U L U' L')"],["(U' L U' L') U2 | (L U' L')"],["U (L U L') U2 | (L U L')"],["(U2' L U L') d' | (R' U R)"],["y U2' (R' U R) d | (L U L')"],
+["y (R' U R) d' (R U2' R' U2 | R U' R')"],["(L U L' U') (L U2 L' U') | (L U L')"],["(L U' L' U) (L U2' L') U | (L U' L')"],["y (R' U R) U2' y (R U R' U | R U' R')"],["(L U' L') d' (U' R' U' R U') | (R' U R)"],
+],
+};
+
+</script>
+<script>
+(() => {
+const C = Cube;
+const LEARN = ['cy', 'co', 'cg', 'cw', 'cr', 'cb']; // U R F D L B, yellow up / green front
+const WCA = ['cw', 'cr', 'cg', 'cy', 'co', 'cb'];   // white up / green front
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('scl.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('scl.' + k, JSON.stringify(v)); } catch {} },
+};
+const r3 = n => Math.round(n * 1000) / 1000;
+
+// ---------- diagrams ----------
+function svgTop(st, mode) {
+  let s = '<rect class="body" x="-0.06" y="-0.06" width="3.12" height="3.12" rx="0.16"/>';
+  const rect = (cls, x, y, w, h, rx) => `<rect class="${cls}" x="${r3(x)}" y="${r3(y)}" width="${w}" height="${h}" rx="${rx}"/>`;
+  for (let i = 0; i < 54; i++) {
+    const { p, n } = C.STK[i]; if (p[1] !== 1) continue;
+    const col = p[0] + 1, row = p[2] + 1, f = C.faceOf(st[i]);
+    const ring = Math.abs(p[0]) + Math.abs(p[2]); // 2 = corner, 1 = edge
+    const cls = mode === 'oll-e' ? (f === 0 && ring !== 2 ? 'cy' : 'cx')
+      : mode === 'oll' ? (f === 0 ? 'cy' : 'cx')
+      : mode === 'pll-c' && ring === 1 && n[1] !== 1 ? 'cx' : LEARN[f];
+    if (n[1] === 1) s += rect(cls, col + .06, row + .06, .88, .88, .1);
+    else if (n[0] === 1) s += rect(cls, 3.14, row + .07, .3, .86, .06);
+    else if (n[0] === -1) s += rect(cls, -0.44, row + .07, .3, .86, .06);
+    else if (n[2] === 1) s += rect(cls, col + .07, 3.14, .86, .3, .06);
+    else s += rect(cls, col + .07, -0.44, .86, .3, .06);
+  }
+  if (mode === 'pll' || mode === 'pll-c') s += pllArrows(st, mode === 'pll-c');
+  return `<svg class="dg" viewBox="-0.55 -0.55 4.1 4.1" aria-hidden="true">${s}</svg>`;
+}
+function pllArrows(st, cornersOnly) {
+  const cell = i => [i % 3 + .5, Math.floor(i / 3) + .5];
+  let s = '';
+  const head = (x, y, ux, uy) => {
+    const L = .26, W = .13;
+    return `<polygon class="arrow-head" points="${r3(x)},${r3(y)} ${r3(x - ux * L - uy * W)},${r3(y - uy * L + ux * W)} ${r3(x - ux * L + uy * W)},${r3(y - uy * L - ux * W)}"/>`;
+  };
+  for (let i = 0; i < 9; i++) {
+    if (i === 4 || (cornersOnly && i % 2)) continue;
+    const h = st[i]; if (h === i || h > 8) continue;
+    const both = st[h] === i; if (both && i > h) continue;
+    const [x1, y1] = cell(i), [x2, y2] = cell(h);
+    const d = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / d, uy = (y2 - y1) / d, pad = .2;
+    const ax = x1 + ux * pad, ay = y1 + uy * pad, bx = x2 - ux * pad, by = y2 - uy * pad;
+    s += `<line class="arrow-line" stroke-width=".07" stroke-linecap="round" x1="${r3(both ? ax + ux * .2 : ax)}" y1="${r3(both ? ay + uy * .2 : ay)}" x2="${r3(bx - ux * .2)}" y2="${r3(by - uy * .2)}"/>`;
+    s += head(bx, by, ux, uy);
+    if (both) s += head(ax, ay, -ux, -uy);
+  }
+  return s;
+}
+function svgIso(st, pal, maskTop) {
+  const P = ([x, y, z]) => [r3((x - z) * 0.866), r3((x + z) * 0.5 - y)];
+  const quad = (c, t, h) => [[1, 1], [1, -1], [-1, -1], [-1, 1]].map(([a, b]) => { const q = c.slice(); q[t[0]] += a * h; q[t[1]] += b * h; return P(q).join(','); }).join(' ');
+  let s = '';
+  for (const n of [[0, 1, 0], [0, 0, 1], [1, 0, 0]]) {
+    const ax = n.findIndex(v => v), t = [0, 1, 2].filter(a => a !== ax);
+    s += `<polygon class="body" stroke-linejoin="round" points="${quad(n.map(v => v * 1.5), t, 1.53)}"/>`;
+  }
+  C.STK.forEach((stk, i) => {
+    const { p, n } = stk;
+    if (!(n[1] === 1 || n[2] === 1 || n[0] === 1)) return;
+    const ax = n.findIndex(v => v), t = [0, 1, 2].filter(a => a !== ax);
+    const id = st[i];
+    const cls = maskTop && C.STK[id].p[1] === 1 ? 'cx' : pal[C.faceOf(id)];
+    s += `<polygon class="${cls}" points="${quad(p.map((v, k) => v + n[k] * 0.5), t, 0.43)}"/>`;
+  });
+  return `<svg class="dg" viewBox="-2.75 -3.1 5.5 6.2" aria-hidden="true">${s}</svg>`;
+}
+function svgNet(st) {
+  const POS = [[1, 0], [2, 1], [1, 1], [1, 2], [0, 1], [3, 1]];
+  let s = '';
+  for (let f = 0; f < 6; f++) {
+    const [fx, fy] = POS[f], ox = fx * 3.2, oy = fy * 3.2;
+    s += `<rect class="body" x="${r3(ox - .06)}" y="${r3(oy - .06)}" width="3.12" height="3.12" rx=".14"/>`;
+    for (let k = 0; k < 9; k++) s += `<rect class="${WCA[C.faceOf(st[f * 9 + k])]}" x="${r3(ox + k % 3 + .05)}" y="${r3(oy + Math.floor(k / 3) + .05)}" width=".9" height=".9" rx=".08"/>`;
+  }
+  return `<svg class="dg" viewBox="-0.2 -0.2 13 9.9" role="img" aria-label="Net of the scrambled cube">${s}</svg>`;
+}
+
+// ---------- case sets ----------
+const U_ = ['', 'U', 'U2', "U'"];
+function moved(st) { // score a PLL view: fewer moved pieces, and avoid 4-cycles (standard diagrams use 2- and 3-cycles)
+  let n = 0; const seen = {};
+  for (const i of [0, 1, 2, 3, 5, 6, 7, 8]) {
+    if (seen[i] || st[i] === i) continue;
+    let len = 0, q = i; while (!seen[q]) { seen[q] = 1; len++; q = st[q]; }
+    n += len * 10 + (len === 4 ? 25 : 0);
+  }
+  return n;
+}
+function pllNormalize(alg) { // append the AUF that makes the diagram show the canonical case
+  let best = null;
+  for (let b = 0; b < 4; b++) {
+    const a = (alg + ' ' + U_[b]).trim();
+    const m = moved(C.caseState(a));
+    if (!best || m < best.m) best = { a, m };
+  }
+  return best.a;
+}
+const F2L_PAL = ['cy', 'cg', 'cr', 'cw', 'cb', 'co']; // U R F D L B, yellow up / red front, as on the sheet
+const SLOTS = { FR: 'Front-right', BR: 'Back-right', FL: 'Front-left', BL: 'Back-left' };
+const SLOT_VIEW = { BR: 'y', FL: "y'", BL: 'y2' };
+const ROTS = []; for (const a of ['', 'x', 'x2', "x'", 'z', "z'"]) for (const b of ['', 'y', 'y2', "y'"]) ROTS.push((a + ' ' + b).trim());
+const CENTRES = [4, 13, 22, 31, 40, 49];
+function splitAlg(raw) { const [a, b] = raw.includes('|') ? raw.split('|').map(x => x.trim()) : [raw, '']; return { pre: a, ins: b, alg: (a + ' ' + b).trim() }; }
+// Common finger-trick groups, longest first. Display only: the stored algorithm never changes.
+const TRIGGERS = [
+  "R U R' U'", "U R U' R'", "R' U' R U", "L' U' L U", "L U L' U'", "r U R' U'",
+  "R' F R F'", "r' F R F'", "F R' F' R",
+  "R U R'", "R U' R'", "R U2 R'", "R' U R", "R' U' R", "R' U2 R",
+  "L U L'", "L U' L'", "L U2 L'", "L' U L", "L' U' L", "L' U2 L",
+].map(t => t.split(' ')).sort((a, b) => b.length - a.length);
+function bracketAlg(alg) {
+  const m = alg.trim().split(/\s+/), out = [];
+  for (let i = 0; i < m.length;) {
+    const t = TRIGGERS.find(t => t.every((x, k) => m[i + k] === x));
+    if (t) { out.push('(' + t.join(' ') + ')'); i += t.length; } else out.push(m[i++]);
+  }
+  return out.join(' ');
+}
+function algHtml(c) { return c.pre === undefined ? esc(bracketAlg(c.alg)) : `${esc(c.pre)}${c.pre && c.ins ? ' ' : ''}<span class="ins">${esc(c.ins)}</span>`; }
+function sheetCase(alg) { // algorithms may end in a rotated hold, so find the start position whose centres are home
+  const inv = C.invert(alg);
+  for (const r of ROTS) { const st = C.apply(C.apply(C.solved(), r), inv); if (CENTRES.every(i => st[i] === i)) return { state: st, setup: (r + ' ' + inv).trim() }; }
+}
+function f2lCases() {
+  const out = [];
+  for (const slot of Object.keys(SLOTS)) {
+    let g = 0, left = SIZES[0];
+    SHEET[slot].forEach((entry, i) => {
+      while (!left) left = SIZES[++g];
+      left--;
+      const [p, ...alts] = entry.map(e => typeof e === 'string' ? splitAlg(e) : { ...splitAlg(e.a), needs: e.needs, note: e.note });
+      out.push({ ...p, ...sheetCase(p.alg), id: `f2l-${slot}-${i + 1}`, name: '#' + (i + 1), group: G[g], slot, alts });
+    });
+  }
+  return out;
+}
+let level = store.get('level', 'beginner') === 'advanced' ? 'advanced' : 'beginner';
+const SETS = {
+  f2l: {
+    title: 'First Two Layers', short: 'F2L',
+    intro: 'Every case from your all-slots sheet, in the same order and groups. Pick the slot you are solving. Plain moves set up the pair and blue moves insert it.',
+    note: 'Algorithms and groupings are from the CubeSkills F2L sheet by Feliks Zemdegs and Andy Klise. The sheet recommends learning intuitive F2L first.',
+    hold: 'Start from solved, with yellow on top and red in front, then do these moves.',
+    cases: f2lCases(),
+    draw: (st, c) => {
+      const hold = svgIso(st, F2L_PAL, true), r = SLOT_VIEW[c.slot];
+      return r ? `<div class="two"><figure>${hold}<figcaption>As you hold it</figcaption></figure><figure>${svgIso(C.apply(st, r), F2L_PAL, true)}<figcaption>Facing the slot</figcaption></figure></div>` : hold;
+    },
+  },
+  oll: {
+    title: 'Orient Last Layer', short: 'OLL',
+    intro: 'All 57 cases for turning the whole top face yellow in one algorithm. Only yellow matters here, so every other sticker is grey.',
+    note: 'For two-look OLL, start with the Cross group (21–27). Those seven finish the top once all four edges are oriented.',
+    cases: OLL.map(([n, g, alg]) => ({ id: 'oll-' + n, name: 'OLL ' + n, group: g, alg })),
+    draw: (st) => svgTop(st, 'oll'),
+  },
+  pll: {
+    title: 'Permute Last Layer', short: 'PLL',
+    intro: 'All 21 cases for moving the top-layer pieces into place once the top is yellow. Arrows show where each piece travels.',
+    note: 'A trailing U move has been added where an algorithm needs one to finish, so each algorithm here ends with the cube solved.',
+    cases: PLL.map(([n, g, alg]) => ({ id: 'pll-' + n, name: n, group: g, alg: pllNormalize(alg) })),
+    draw: (st) => svgTop(st, 'pll'),
+  },
+};
+SETS.pll.panel = guideHtml;
+const beginnerCase = (prefix, [name, group, alg]) => ({ id: prefix + name, name, group, alg });
+const BEGINNER = {
+  f2l: {
+    title: 'First Two Layers', short: 'Beginner F2L',
+    intro: 'Solve each corner and its edge together, working it out on the cube. These are the cases where both pieces are in the top layer, for the front-right slot.',
+    note: "The approach follows J Perm's CFOP roadmap. The moves on the cards are one way through each case, from your CubeSkills sheet.",
+    hold: SETS.f2l.hold,
+    cases: SETS.f2l.cases.filter(c => c.slot === 'FR' && G.slice(0, 5).includes(c.group)),
+    draw: SETS.f2l.draw,
+    panel: () => beginnerPanel('f2l'),
+  },
+  oll: {
+    title: 'Orient Last Layer', short: 'Beginner OLL',
+    intro: 'Turn the whole top yellow in two steps. These ten algorithms cover every case.',
+    note: "Algorithms are from J Perm's 2-look OLL page.",
+    cases: BEGIN_OLL.map(x => beginnerCase('b-oll-', x)),
+    draw: (st, c) => svgTop(st, c.group === 'Step 1: Edges' ? 'oll-e' : 'oll'),
+    panel: () => beginnerPanel('oll'),
+  },
+  pll: {
+    title: 'Permute Last Layer', short: 'Beginner PLL',
+    intro: 'Finish the cube in two steps, corners first and then edges. These six algorithms cover every case.',
+    note: "Algorithms are from J Perm's PLL pages.",
+    cases: BEGIN_PLL.map(x => { // show J Perm's exact moves; the diagram alone uses the canonical angle
+      const c = beginnerCase('b-pll-', x);
+      if (c.group === 'Step 2: Edges') { const n = pllNormalize(c.alg); c.state = C.caseState(n); c.setup = C.invert(n); }
+      return c;
+    }),
+    draw: (st, c) => svgTop(st, c.group === 'Step 1: Corners' ? 'pll-c' : 'pll'),
+    panel: () => beginnerPanel('pll'),
+  },
+};
+const curSet = key => level === 'beginner' ? BEGINNER[key] : SETS[key];
+for (const sets of [SETS, BEGINNER]) for (const k in sets) for (const c of sets[k].cases) if (!c.state) c.state = C.caseState(c.alg);
+
+let status = store.get('status', {});
+const ui = store.get('learnUi', {});
+const view = { f2l: { s: 'all', g: 'all' }, oll: { s: 'all', g: 'all' }, pll: { s: 'all', g: 'all' }, ...ui };
+view.f2l.slot = SLOTS[view.f2l.slot] ? view.f2l.slot : 'FR';
+const casesOf = key => level === 'beginner' ? BEGINNER[key].cases : key === 'f2l' ? SETS.f2l.cases.filter(c => c.slot === view.f2l.slot) : SETS[key].cases;
+const S_LABEL = ['Not started', 'Learning', 'Learned'];
+const S_KEYS = [['all', 'All'], ['0', 'Not started'], ['1', 'Learning'], ['2', 'Learned']];
+
+function filtered(key) {
+  const v = view[key];
+  return casesOf(key).filter(c => (v.s === 'all' || String(status[c.id] || 0) === String(v.s)) && (v.g === 'all' || c.group === v.g));
+}
+// ---------- PLL recognition guide ----------
+const SIDE_NAMES = ['Left', 'Front', 'Right', 'Back'];
+const SIDE_FACE = { L: 4, F: 2, R: 1, B: 5 };
+function stripSvg(sides, labelled) {
+  const top = labelled ? 1 : 0;
+  let s = '';
+  sides.forEach((tri, i) => {
+    const x = i * 3.5;
+    if (labelled) s += `<text class="strip-label" x="${x + 1.5}" y=".72" text-anchor="middle">${SIDE_NAMES[i]}</text>`;
+    s += `<rect class="body" x="${x - .06}" y="${top - .06}" width="3.12" height="1.12" rx=".14"/>`;
+    tri.forEach((cls, c) => { s += `<rect class="${cls}" x="${x + c + .06}" y="${top + .06}" width=".88" height=".88" rx=".1"/>`; });
+  });
+  return `<svg class="strip" viewBox="-.1 -.1 ${sides.length * 3.5 - .3} ${top + 1.2}" style="width:${sides.length * 52}px" aria-hidden="true">${s}</svg>`;
+}
+const caseSides = (c, order) => order.map(k => [0, 1, 2].map(i => LEARN[C.faceOf(c.state[SIDE_FACE[k] * 9 + i])]));
+const GUIDE_ORDER = ['L', 'F', 'R', 'B'];
+const PLL_GUIDE = [
+  { title: 'All four sides match', rows: [
+    ['H', 'Every middle sticker is the opposite colour to its corners.'],
+    ['Z', 'Every middle sticker is a neighbouring colour, not the opposite.'],
+    ['Ua', "One side is entirely one colour. Hold it at the back, and the right side's middle is the opposite colour."],
+    ['Ub', "One side is entirely one colour. Hold it at the back, and the left side's middle is the opposite colour."],
+  ] },
+  { title: 'No sides match', rows: [
+    ['E', 'No two neighbouring stickers match anywhere.'],
+    ['Na', 'Every side has a pair, on the right of each side.'],
+    ['Nb', 'Every side has a pair, on the left of each side.'],
+    ['Y', 'Two neighbouring sides have a pair, with the pairs apart.'],
+    ['V', 'Two neighbouring sides have a pair, with the pairs touching at the shared corner.', ['R', 'B', 'L', 'F']],
+  ] },
+  { title: 'Exactly one side matches', full: true, lead: 'Turn the whole cube so that side is on your left, then check what kind it is.', subs: [
+    { title: 'Left side is entirely one colour', rows: [
+      ['F', 'No pairs on the front or right.'],
+      ['Ja', 'The front has a pair at its left end.'],
+      ['Jb', 'The front has a pair at its right end.'],
+    ] },
+    { title: "Left side's middle is the opposite colour to its corners", rows: [
+      ['T', 'Pairs on both the front and back, each touching the left side.'],
+      ['Gb', 'One pair on the right side, at its right end.'],
+      ['Gd', 'One pair on the right side, at its left end.'],
+    ] },
+    { title: "Left side's middle is a neighbouring colour", rows: [
+      ['Aa', 'Pairs on the front and right that meet at the corner between them.'],
+      ['Ab', 'A pair at the right end of the right side.'],
+      ['Ra', 'A single pair at the left end of the front.'],
+      ['Ga', 'A single pair at the right end of the front.'],
+      ['Rb', "Nothing on the front or right, and the back's pair touches the left side."],
+      ['Gc', "Nothing on the front or right, and the back's pair touches the right side."],
+    ] },
+  ] },
+];
+function guideRows(rows, pool = SETS.pll.cases) {
+  return rows.map(([name, text, order, noStrip]) => {
+    const c = pool.find(x => x.name === name);
+    return `<div class="g-row${noStrip ? ' long' : ''}" role="button" tabindex="0" data-case="${c.id}" data-guide-case="${name}"><span class="g-name">${esc(name)}</span><span class="g-text">${esc(text)}</span>${noStrip ? '' : stripSvg(caseSides(c, order || GUIDE_ORDER), true)}</div>`;
+  }).join('');
+}
+function guideHtml() {
+  const open = view.pll.guide !== false;
+  const ex = (tri, label, note, no) => `<div class="g-ex${no ? ' no' : ''}">${stripSvg([tri], false)}<span><b>${label}</b>. ${note}</span></div>`;
+  const head = `<div class="guide-head"><div><div class="eyebrow">Recognition guide</div><h2>Which PLL is it?</h2></div><button class="btn ghost" type="button" data-guide aria-expanded="${open}">${open ? 'Hide' : 'Show'}</button></div>`;
+  if (!open) return `<div class="guide">${head}</div>`;
+  return `<div class="guide">${head}
+    <div class="g-steps">
+      <div>
+        <h3>Step 1: Compare the two ends of each side</h3>
+        <p>With yellow on top, each side of the top layer shows three stickers: corner, edge, corner. Ignore the middle sticker and check whether the two ends are the same colour. They only have to match each other, not the centre below.</p>
+        <p>Do that for all four sides, turning the cube to see the back. The count is always 4, 1 or 0.</p>
+        <div class="g-exs">
+          ${ex(['cr', 'cb', 'cr'], 'Match', 'Both ends are red')}
+          ${ex(['cr', 'cr', 'cr'], 'Match', 'Both ends are red')}
+          ${ex(['cr', 'cr', 'cg'], 'No match', 'Ends differ', true)}
+        </div>
+      </div>
+      <div>
+        <h3>Step 2: Use the count to pick a list</h3>
+        <p>Opposite colours are red/orange and blue/green, and any other two colours are neighbouring. A <b>pair</b> means two matching neighbours on the front, right or back.</p>
+        <p><b>Compare patterns, not colours.</b> The strips and cards use one set of colours, and your cube can show the same case in any of four colourings. Look at which stickers match each other and where.</p>
+        <p>Click a case to open its card and algorithm. The "a" and "b" names can differ from other sources, so go by these cards.</p>
+      </div>
+    </div>
+    <div class="g-lists">
+      ${PLL_GUIDE.map(l => `<div class="g-list${l.full ? ' full' : ''}"><h3>${esc(l.title)}</h3>${l.lead ? `<p>${esc(l.lead)}</p>` : ''}${l.subs
+        ? `<div class="g-subs">${l.subs.map(x => `<div><div class="g-sub-title">${esc(x.title)}</div>${guideRows(x.rows)}</div>`).join('')}</div>`
+        : guideRows(l.rows)}</div>`).join('')}
+    </div>
+    <p><b>How to practise.</b> Spend a few days only doing Step 1, naming "all four, none or one" before you solve anything. Then add the lists one at a time, starting with all four and left side entirely one colour, because they are the easiest to see. Recognising the case correctly matters more than speed for now.</p>
+  </div>`;
+}
+function beginnerPanel(key) {
+  const open = view[key].guide !== false;
+  const titles = { f2l: 'How beginner F2L works', oll: 'The two steps', pll: 'The two steps' };
+  const head = `<div class="guide-head"><div><div class="eyebrow">How it works</div><h2>${titles[key]}</h2></div><button class="btn ghost" type="button" data-guide aria-expanded="${open}">${open ? 'Hide' : 'Show'}</button></div>`;
+  if (!open) return `<div class="guide">${head}</div>`;
+  if (key === 'f2l') return `<div class="guide">${head}
+    <div>
+      <p>The layer-by-layer way puts a corner in, then an edge. F2L puts them in together, and this idea does most of the work.</p>
+      <ol>
+        <li>Find a corner and the edge that belongs next to it, with both in the top layer. Keep the empty slot at the front right.</li>
+        <li>Insert the corner the normal way and watch which edge comes in with it. That spot is where your edge needs to start.</li>
+        <li>Make a few moves to bring the right edge to that spot, then insert the corner again. The two go in together.</li>
+        <li>If a corner or edge is stuck in a slot, take it out so both are on top, then start from step 1.</li>
+      </ol>
+      <p style="margin-top:10px">Work it out on the cube instead of memorising moves. The idea is quick to understand and takes much longer to use in real solves, so expect to be slower at first.</p>
+    </div></div>`;
+  if (key === 'oll') return `<div class="guide">${head}
+    <div class="g-steps">
+      <div><h3>Step 1: Make the yellow cross</h3><p>Look only at the four yellow edges and ignore the corners. Turn the top layer until the yellow edges match the card, then do its algorithm. If you already have the cross, skip to step 2.</p></div>
+      <div><h3>Step 2: Turn the corners yellow</h3><p>With the cross done, look at the corners. Turn the top layer until they match one of the seven cards, then do its algorithm.</p></div>
+    </div></div>`;
+  const P = BEGINNER.pll.cases;
+  return `<div class="guide">${head}
+    <div class="g-steps">
+      <div>
+        <h3>Step 1: Solve the corners</h3>
+        <p>On each side of the top layer, ignore the middle sticker and check whether the two end stickers are the same colour. They only have to match each other. Count how many of the four sides match.</p>
+        <div style="margin-top:8px">${guideRows([
+          ['Headlights', 'One side matches. Turn the top layer until it is on your left, then do this.', null, true],
+          ['Diagonal', 'No sides match. Do this from any angle.', null, true],
+        ], P)}</div>
+        <p style="margin-top:10px">If all four sides already match, go straight to step 2.</p>
+      </div>
+      <div>
+        <h3>Step 2: Solve the edges</h3>
+        <p>All four sides now match at the ends, so the middle stickers tell you the case. Opposite colours are red/orange and blue/green. Afterwards, turn the top layer to line it up with the rest of the cube.</p>
+        <div style="margin-top:8px">${guideRows([
+          ['H', 'Every middle sticker is the opposite colour to its corners. Any angle works.'],
+          ['Z', "Every middle sticker is a neighbouring colour. Turn the top layer until the front's middle matches the left side's corners."],
+          ['Ua', "One side is entirely one colour. Turn the top layer to put it at the back, and the right side's middle is the opposite colour."],
+          ['Ub', "One side is entirely one colour. Turn the top layer to put it at the back, and the left side's middle is the opposite colour."],
+        ], P)}</div>
+      </div>
+    </div></div>`;
+}
+function renderLearn(key) {
+  const set = curSet(key), v = view[key];
+  const all = casesOf(key), counts = [0, 0, 0]; all.forEach(c => counts[status[c.id] || 0]++);
+  const total = all.length, groups = [...new Set(all.map(c => c.group))];
+  if (v.g !== 'all' && !groups.includes(v.g)) v.g = 'all';
+  const list = filtered(key);
+  let grid = '';
+  for (const g of groups) {
+    const items = list.filter(c => c.group === g);
+    if (!items.length) continue;
+    grid += `<div class="group-title"><h2>${esc(g)}</h2><span>${items.length} case${items.length > 1 ? 's' : ''}</span></div>`;
+    grid += items.map(c => `<div class="card" role="button" tabindex="0" data-case="${c.id}">
+      <div class="card-top"><button class="status" type="button" data-cycle="${c.id}" data-s="${status[c.id] || 0}" title="${S_LABEL[status[c.id] || 0]}. Click to change." aria-label="Status: ${S_LABEL[status[c.id] || 0]}"><i></i></button><span class="card-name">${esc(c.name)}</span></div>
+      <div class="fig">${set.draw(c.state, c)}</div>
+      <div class="alg">${algHtml(c)}</div></div>`).join('');
+  }
+  if (!grid) grid = `<div class="none">No cases match these filters.</div>`;
+  const pct = n => (n / total * 100).toFixed(2) + '%';
+  $('#tab-' + key).innerHTML = `
+    <div class="learn-head">
+      <div class="intro"><div class="eyebrow">${set.short}${key === 'f2l' && level === 'advanced' ? ' · ' + SLOTS[v.slot] + ' slot' : ''} · ${total} cases</div><h1>${set.title}</h1><p>${set.intro}</p></div>
+      <div class="progress">
+        <div class="eyebrow">Your progress</div>
+        <div class="progress-track"><i style="width:${pct(counts[2])};background:var(--ok)"></i><i style="width:${pct(counts[1])};background:var(--warn)"></i></div>
+        <div class="progress-legend"><span><i class="dot" style="background:var(--ok)"></i>${counts[2]} learned</span><span><i class="dot" style="background:var(--warn)"></i>${counts[1]} learning</span><span>${counts[0]} to go</span></div>
+      </div>
+    </div>
+    ${set.panel ? set.panel() : ''}
+    <div class="filters">
+      ${key === 'f2l' && level === 'advanced' ? `<div class="chips" role="group" aria-label="Slot">${Object.entries(SLOTS).map(([k, l]) => `<button class="chip" type="button" data-slot="${k}" aria-pressed="${v.slot === k}">${l}</button>`).join('')}</div>` : ''}
+      <div class="chips">${S_KEYS.map(([k, l]) => `<button class="chip" type="button" data-fs="${k}" aria-pressed="${String(v.s) === k}">${l}</button>`).join('')}</div>
+      <div class="chips">${['all', ...groups].map(g => `<button class="chip" type="button" data-fg="${esc(g)}" aria-pressed="${v.g === g}">${g === 'all' ? 'All groups' : esc(g)}</button>`).join('')}</div>
+      <span class="spacer"></span>
+      <button class="btn primary" type="button" data-drill ${list.length ? '' : 'disabled'}>Drill ${list.length} case${list.length === 1 ? '' : 's'}</button>
+    </div>
+    <div class="grid${key === 'f2l' && level === 'advanced' && v.slot !== 'FR' ? ' wide' : ''}">${grid}</div>
+    <p style="color:var(--muted);font-size:13px;margin-top:24px;max-width:70ch">${set.note} Click the circle on a card to mark it as learning or learned. Your progress is saved in this browser.</p>`;
+}
+function cycleStatus(id) {
+  status[id] = ((status[id] || 0) + 1) % 3; if (!status[id]) delete status[id];
+  store.set('status', status);
+}
+function setStatus(id, s) { if (s) status[id] = s; else delete status[id]; store.set('status', status); }
+function findCase(id) { for (const sets of level === 'beginner' ? [BEGINNER, SETS] : [SETS, BEGINNER]) for (const k in sets) { const c = sets[k].cases.find(c => c.id === id); if (c) return [k, c, sets[k]]; } }
+
+for (const key of Object.keys(SETS)) {
+  const el = $('#tab-' + key);
+  el.addEventListener('click', e => {
+    const cyc = e.target.closest('[data-cycle]');
+    if (cyc) { e.stopPropagation(); cycleStatus(cyc.dataset.cycle); renderLearn(key); return; }
+    if (e.target.closest('[data-guide]')) { view[key].guide = view[key].guide === false; store.set('learnUi', view); renderLearn(key); return; }
+    const sl = e.target.closest('[data-slot]'); if (sl) { view.f2l.slot = sl.dataset.slot; store.set('learnUi', view); renderLearn(key); return; }
+    const fs = e.target.closest('[data-fs]'); if (fs) { view[key].s = fs.dataset.fs; store.set('learnUi', view); renderLearn(key); return; }
+    const fg = e.target.closest('[data-fg]'); if (fg) { view[key].g = fg.dataset.fg; store.set('learnUi', view); renderLearn(key); return; }
+    if (e.target.closest('[data-drill]')) { openDrill(key); return; }
+    const card = e.target.closest('[data-case]'); if (card) openCase(card.dataset.case);
+  });
+  el.addEventListener('keydown', e => { const card = e.target.closest('[data-case]'); if (card && (e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); openCase(card.dataset.case); } });
+}
+
+// ---------- modals ----------
+let modalKeys = null;
+function closeModal() { $('#modal-root').innerHTML = ''; modalKeys = null; const k = current; if (SETS[k]) renderLearn(k); }
+function showModal(html, onKey) {
+  $('#modal-root').innerHTML = `<div class="overlay" id="overlay"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  $('#overlay').addEventListener('click', e => { if (e.target.id === 'overlay' || e.target.closest('[data-close]')) closeModal(); });
+  modalKeys = onKey || null;
+  const f = $('#overlay [data-focus]') || $('#overlay .x'); f && f.focus();
+}
+function statusSeg(id) {
+  const s = status[id] || 0;
+  return `<div class="seg" role="group" aria-label="Status">${S_LABEL.map((l, i) => `<button type="button" data-set="${i}" aria-pressed="${s === i}">${l}</button>`).join('')}</div>`;
+}
+function copy(text, btn) {
+  const done = () => { const o = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = o, 1200); };
+  try { navigator.clipboard.writeText(text).then(done, () => selectFallback(btn)); } catch { selectFallback(btn); }
+}
+function selectFallback(btn) { const t = btn.closest('.kv, .scramble-card')?.querySelector('.alg, .scramble'); if (t) { const r = document.createRange(); r.selectNodeContents(t); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } }
+function openCase(id) {
+  const [key, c, set] = findCase(id);
+  const setup = c.setup || C.invert(c.alg);
+  showModal(`
+    <div class="modal-head"><div><div class="eyebrow">${set.short} · ${esc(c.group)}</div><h3>${esc(c.name)}</h3></div><button class="btn ghost x" type="button" data-close>Close</button></div>
+    <div class="fig">${set.draw(c.state, c)}</div>
+    <div class="kv"><div class="row"><span class="eyebrow" style="margin-right:auto">Algorithm</span><button class="btn ghost" type="button" data-copy="${esc(c.alg)}">Copy</button></div><div class="alg">${algHtml(c)}</div></div>
+    ${c.alts && c.alts.length ? `<div class="kv"><span class="eyebrow">Alternative${c.alts.length > 1 ? 's' : ''}</span><div class="alts alg">${c.alts.map(a => `<div>${algHtml(a)}${a.needs ? `<small>Only when the ${SLOTS[a.needs].toLowerCase()} slot is empty</small>` : ''}${a.note ? `<small>${esc(a.note)}</small>` : ''}</div>`).join('')}</div></div>` : ''}
+    <div class="kv"><div class="row"><span class="eyebrow" style="margin-right:auto">Set it up on your cube</span><button class="btn ghost" type="button" data-copy="${esc(setup)}">Copy</button></div><div class="alg">${esc(setup)}</div>
+      <small style="color:var(--muted)">${set.hold || 'Start from solved, yellow on top and green in front, then do these moves.'}</small></div>
+    <div class="row">${statusSeg(id)}</div>`);
+  $('#overlay').addEventListener('click', e => {
+    const b = e.target.closest('[data-set]'); if (b) { setStatus(id, +b.dataset.set); $('#overlay .seg').outerHTML = statusSeg(id); }
+    const cp = e.target.closest('[data-copy]'); if (cp) copy(cp.dataset.copy, cp);
+  });
+}
+function openDrill(key) {
+  const pool = filtered(key), set = curSet(key);
+  if (!pool.length) return;
+  let order = [], idx = 0, seen = 0, revealed = false, cur, auf;
+  const shuffle = () => { order = pool.slice().sort(() => Math.random() - .5); idx = 0; };
+  shuffle();
+  const next = () => {
+    if (idx >= order.length) shuffle();
+    cur = order[idx++]; seen++; revealed = false;
+    auf = Math.floor(Math.random() * 4);
+    draw();
+  };
+  const draw = () => {
+    const st = C.apply(cur.state, U_[auf]);
+    const pre = U_[(4 - auf) % 4];
+    $('#modal-root').querySelector('.modal').innerHTML = `
+      <div class="modal-head"><div><div class="eyebrow">${set.short} drill · ${pool.length} cases</div><h3>${revealed ? esc(cur.name) : 'Which case is this?'}</h3></div><button class="btn ghost x" type="button" data-close>Done</button></div>
+      <div class="fig">${set.draw(st, cur)}</div>
+      ${revealed ? `<div class="kv"><span class="eyebrow">${esc(cur.group)}</span><div class="alg">${pre ? `<span class="auf">${pre}</span> then ` : ''}${algHtml(cur)}</div></div>
+        <div class="row">${statusSeg(cur.id)}<span style="flex:1"></span><button class="btn primary" type="button" data-next data-focus>Next case <kbd>Space</kbd></button></div>`
+      : `<button class="reveal" type="button" data-show data-focus>Recall the algorithm, then show it <kbd>Space</kbd></button>`}
+      <div class="drill-meta">Case ${seen} · the top layer is turned at random, like a real solve</div>`;
+    const f = $('#overlay [data-focus]'); f && f.focus();
+  };
+  showModal('', e => {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (revealed) next(); else { revealed = true; draw(); } return true; }
+  });
+  $('#overlay').addEventListener('click', e => {
+    if (e.target.closest('[data-show]')) { revealed = true; draw(); }
+    else if (e.target.closest('[data-next]')) next();
+    const b = e.target.closest('[data-set]'); if (b) { setStatus(cur.id, +b.dataset.set); $('#overlay .seg').outerHTML = statusSeg(cur.id); }
+  });
+  next();
+}
+
+// ---------- timer ----------
+let times = store.get('times', []);
+let scramble = '';
+const T = { phase: 'idle', holdTimer: null, start: 0, raf: 0, inspStart: 0, inspPen: 0 };
+const val = t => t.pen === 'dnf' ? Infinity : t.ms + (t.pen || 0);
+function fmt(ms) {
+  if (ms == null) return '–';
+  if (ms === Infinity) return 'DNF';
+  const cs = Math.floor(ms / 10), s = Math.floor(cs / 100), c = String(cs % 100).padStart(2, '0');
+  return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}.${c}` : `${s}.${c}`;
+}
+function avgOf(list, n) { // list: chronological values
+  if (list.length < n) return null;
+  const last = list.slice(-n).sort((a, b) => a - b), trim = n <= 12 ? 1 : Math.ceil(n * 0.05);
+  const mid = last.slice(trim, n - trim);
+  if (mid.some(v => v === Infinity)) return Infinity;
+  return mid.reduce((a, b) => a + b, 0) / mid.length;
+}
+function bestAvg(list, n) { let b = null; for (let i = n; i <= list.length; i++) { const a = avgOf(list.slice(0, i), n); if (a != null && (b == null || a < b)) b = a; } return b; }
+function renderStats() {
+  const v = times.map(val), fin = v.filter(x => x !== Infinity);
+  const best = fin.length ? Math.min(...fin) : null;
+  const mean = fin.length ? fin.reduce((a, b) => a + b, 0) / fin.length : null;
+  const cells = [
+    ['Best', fmt(best), `${times.length} solve${times.length === 1 ? '' : 's'}`],
+    ['Ao5', fmt(avgOf(v, 5)), 'best ' + fmt(bestAvg(v, 5))],
+    ['Ao12', fmt(avgOf(v, 12)), 'best ' + fmt(bestAvg(v, 12))],
+    ['Ao50', fmt(avgOf(v, 50)), 'best ' + fmt(bestAvg(v, 50))],
+    ['Ao100', fmt(avgOf(v, 100)), 'best ' + fmt(bestAvg(v, 100))],
+    ['Mean', fmt(mean), `${times.length - fin.length} DNF`],
+  ];
+  $('#stats').innerHTML = cells.map(([l, a, b]) => `<div class="stat"><span class="eyebrow">${l}</span><b>${a}</b><small>${b}</small></div>`).join('');
+  const bi = v.indexOf(best);
+  $('#times').innerHTML = times.length ? `<table><thead><tr><th>#</th><th>Time</th><th>Ao5</th><th></th></tr></thead><tbody>${times.map((t, i) => ({ t, i })).reverse().map(({ t, i }) => `
+    <tr class="${i === bi ? 'best' : ''}" title="${esc(t.scr)}"><td class="n">${i + 1}</td><td class="t">${t.pen === 'dnf' ? `DNF <span style="color:var(--muted);font-weight:400">(${fmt(t.ms)})</span>` : fmt(val(t)) + (t.pen ? '+' : '')}</td><td>${fmt(avgOf(v.slice(0, i + 1), 5))}</td>
+    <td class="acts"><button type="button" data-pen="2000" data-i="${i}" class="${t.pen === 2000 ? 'on' : ''}">+2</button><button type="button" data-pen="dnf" data-i="${i}" class="${t.pen === 'dnf' ? 'on' : ''}">DNF</button><button type="button" data-del="${i}" aria-label="Delete solve ${i + 1}">✕</button></td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty">No solves yet. Scramble your cube with the moves above, then hold space to start the timer. Your times and averages will appear here.</div>`;
+}
+function newScramble() {
+  scramble = C.randomScramble(20);
+  $('#scramble').textContent = scramble;
+  $('#net').innerHTML = svgNet(C.apply(C.solved(), scramble));
+}
+$('#scr-new').onclick = () => { newScramble(); $('#scr-new').blur(); };
+$('#scr-copy').onclick = e => copy(scramble, e.currentTarget);
+let clearArmed = false;
+$('#clear').onclick = e => {
+  const b = e.currentTarget;
+  if (!times.length) return;
+  if (!clearArmed) { clearArmed = true; b.textContent = 'Click again to clear'; b.style.color = 'var(--bad)'; setTimeout(() => { clearArmed = false; b.textContent = 'Clear'; b.style.color = ''; }, 2500); return; }
+  clearArmed = false; b.textContent = 'Clear'; b.style.color = ''; times = []; store.set('times', times); renderStats();
+};
+$('#times').addEventListener('click', e => {
+  const p = e.target.closest('[data-pen]'), d = e.target.closest('[data-del]');
+  if (p) { const t = times[+p.dataset.i], pen = p.dataset.pen === 'dnf' ? 'dnf' : 2000; t.pen = t.pen === pen ? 0 : pen; }
+  else if (d) times.splice(+d.dataset.del, 1); else return;
+  store.set('times', times); renderStats();
+});
+const IDLE_HINT = 'Hold <kbd>Space</kbd> until the time turns green, then release to start. Any key stops it.';
+const clock = $('#clock'), stage = $('#stage'), hint = $('#hint');
+function setClock(cls, text) { clock.className = 'clock ' + cls; if (text != null) clock.textContent = text; }
+function tick() {
+  if (T.phase === 'running') clock.textContent = fmt(performance.now() - T.start);
+  else if (T.phase === 'inspecting' || T.phase === 'inspHold' || T.phase === 'inspReady') {
+    const e = (performance.now() - T.inspStart) / 1000;
+    if (T.phase === 'inspecting') clock.textContent = e < 15 ? String(Math.ceil(15 - e)) : e < 17 ? '+2' : 'DNF';
+  } else return;
+  T.raf = requestAnimationFrame(tick);
+}
+const inspectOn = () => $('#opt-inspect').checked;
+function press() {
+  if (T.phase === 'running') { stop(); return; }
+  if (T.phase === 'idle' && inspectOn()) { T.phase = 'preInsp'; return; }
+  if (T.phase === 'idle' || T.phase === 'inspecting') {
+    const insp = T.phase === 'inspecting';
+    T.phase = insp ? 'inspHold' : 'hold';
+    setClock('holding', insp ? null : '0.00');
+    T.holdTimer = setTimeout(() => { T.phase = insp ? 'inspReady' : 'ready'; setClock('ready'); }, 300);
+  }
+}
+function release() {
+  if (T.phase === 'preInsp') { T.phase = 'inspecting'; T.inspStart = performance.now(); setClock('inspect', '15'); hint.textContent = 'Inspecting. Hold space when you are ready to solve.'; cancelAnimationFrame(T.raf); tick(); return; }
+  if (T.phase === 'hold' || T.phase === 'inspHold') { clearTimeout(T.holdTimer); T.phase = T.phase === 'hold' ? 'idle' : 'inspecting'; setClock(T.phase === 'idle' ? '' : 'inspect', T.phase === 'idle' ? fmt(times.length ? val(times[times.length - 1]) : 0).replace('–', '0.00') : null); return; }
+  if (T.phase === 'ready' || T.phase === 'inspReady') {
+    const e = T.phase === 'inspReady' ? (performance.now() - T.inspStart) / 1000 : 0;
+    T.inspPen = e >= 17 ? 'dnf' : e >= 15 ? 2000 : 0;
+    T.phase = 'running'; T.start = performance.now(); setClock('', '0.00'); stage.classList.add('running');
+    hint.textContent = 'Press any key or tap to stop.';
+    cancelAnimationFrame(T.raf); tick();
+  }
+}
+function stop() {
+  const ms = Math.round(performance.now() - T.start);
+  T.phase = 'justStopped'; cancelAnimationFrame(T.raf); stage.classList.remove('running');
+  times.push({ ms, pen: T.inspPen || 0, scr: scramble, at: Date.now() });
+  store.set('times', times);
+  setClock('', fmt(val(times[times.length - 1])));
+  hint.innerHTML = IDLE_HINT;
+  renderStats(); newScramble();
+}
+const timerActive = () => current === 'timer' && !$('#overlay');
+document.addEventListener('keydown', e => {
+  if ($('#overlay')) { if (e.key === 'Escape') { closeModal(); return; } if (modalKeys && modalKeys(e)) return; }
+  if (!timerActive()) return;
+  if (T.phase === 'running') { e.preventDefault(); stop(); return; }
+  if (e.key === 'Escape' && T.phase.startsWith('insp')) { clearTimeout(T.holdTimer); T.phase = 'idle'; cancelAnimationFrame(T.raf); setClock('', '0.00'); hint.innerHTML = IDLE_HINT; return; }
+  if (e.key !== ' ' || e.repeat) return;
+  if (e.target.closest('button, input') && e.target !== stage) { if (e.target.closest('input')) return; e.target.blur(); }
+  e.preventDefault(); press();
+});
+document.addEventListener('keyup', e => {
+  if (!timerActive()) return;
+  if (e.key === ' ') { e.preventDefault(); if (T.phase === 'justStopped') { T.phase = 'idle'; return; } release(); }
+  else if (T.phase === 'justStopped') T.phase = 'idle';
+});
+stage.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); stage.setPointerCapture?.(e.pointerId); if (T.phase === 'running') { stop(); return; } press(); });
+stage.addEventListener('pointerup', e => { if (T.phase === 'justStopped') { T.phase = 'idle'; return; } release(); });
+stage.addEventListener('pointercancel', () => { if (T.phase === 'hold') release(); });
+$('#opt-inspect').checked = store.get('inspect', false);
+$('#opt-inspect').onchange = e => { store.set('inspect', e.target.checked); e.target.blur(); };
+
+// ---------- notation ----------
+const MOVES = [
+  ['R', 'Right face clockwise'], ["R'", 'Right face counter-clockwise'], ['R2', 'Right face half turn'], ['U', 'Top face clockwise'], ["U'", 'Top face counter-clockwise'],
+  ['F', 'Front face clockwise'], ['L', 'Left face clockwise, seen from the left'], ['D', 'Bottom face clockwise, seen from below'], ['B', 'Back face clockwise, seen from behind'],
+  ['r', 'Right two layers together (also Rw)'], ['M', 'Middle slice, same direction as L'], ['E', 'Equator slice, same direction as D'], ['S', 'Standing slice, same direction as F'],
+  ['x', 'Whole cube, same direction as R'], ['y', 'Whole cube, same direction as U'], ['z', 'Whole cube, same direction as F'],
+];
+$('#moves').innerHTML = MOVES.map(([m, d]) => `<div class="move"><div class="fig">${svgIso(C.apply(C.solved(), m), LEARN, false)}</div><b>${m}</b><span>${d}</span></div>`).join('');
+
+// ---------- tabs ----------
+let current = 'timer';
+const TABS = ['timer', 'f2l', 'oll', 'pll', 'notation'];
+function go(tab) {
+  if (!TABS.includes(tab)) tab = 'timer';
+  current = tab;
+  document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== tab);
+  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  if (SETS[tab]) renderLearn(tab);
+  if (tab === 'timer') stage.focus({ preventScroll: true });
+}
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { location.hash = b.dataset.tab; b.blur(); } });
+addEventListener('hashchange', () => go(location.hash.slice(1)));
+
+function paintLevel() { document.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', b.dataset.level === level)); }
+$('#level').addEventListener('click', e => {
+  const b = e.target.closest('[data-level]'); if (!b) return;
+  level = b.dataset.level; store.set('level', level); paintLevel(); b.blur();
+  if (SETS[current]) renderLearn(current);
+  else if (current === 'timer') stage.focus({ preventScroll: true });
+});
+paintLevel();
+newScramble(); renderStats(); go(location.hash.slice(1) || 'timer');
+})();
+</script>
