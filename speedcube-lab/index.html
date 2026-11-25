@@ -1,6 +1,9 @@
+<!doctype html>
+<html lang="en">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101214">
 <title>Speedcube Lab</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
@@ -14,7 +17,8 @@
   --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
 html, body { height: 100%; }
-body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; -webkit-tap-highlight-color: transparent; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 * { box-sizing: border-box; }
 button { font: inherit; color: inherit; cursor: pointer; }
@@ -36,7 +40,7 @@ header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; backg
 .brand-mark i:nth-child(5) { background: var(--accent); }
 nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-left: auto; }
 nav button { border: 0; background: none; padding: 8px 14px; border-radius: 6px; font-family: var(--f-display); font-stretch: 112%; font-weight: 600; font-size: 14px; color: var(--muted); white-space: nowrap; }
-nav button:hover { color: var(--ink); background: var(--soft); }
+@media (hover: hover) { nav button:hover { color: var(--ink); background: var(--soft); } }
 nav button[aria-selected="true"] { color: var(--ink); background: var(--panel); box-shadow: inset 0 -2px 0 var(--accent); }
 main { padding-block: 24px 64px; }
 section[hidden] { display: none; }
@@ -44,9 +48,9 @@ section[hidden] { display: none; }
 /* shared */
 .eyebrow { font-family: var(--f-display); font-stretch: 112%; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .btn { border: 1px solid var(--line); background: var(--panel); padding: 7px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
-.btn:hover { border-color: var(--muted); }
+@media (hover: hover) { .btn:hover { border-color: var(--muted); } }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-.btn.primary:hover { filter: brightness(1.06); }
+@media (hover: hover) { .btn.primary:hover { filter: brightness(1.06); } }
 .btn.ghost { background: none; }
 .alg { font-family: var(--f-mono); font-size: 13px; line-height: 1.55; word-spacing: 0.05em; }
 kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--panel); }
@@ -57,7 +61,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line)
 .scramble-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .scramble-head .eyebrow { margin-right: auto; }
 .scramble { font-family: var(--f-mono); font-size: clamp(17px, 2.2vw, 22px); font-weight: 500; letter-spacing: 0.01em; word-spacing: 0.25em; line-height: 1.6; }
-.stage { position: relative; display: grid; place-items: center; min-height: 340px; user-select: none; -webkit-user-select: none; touch-action: manipulation; cursor: pointer; border-radius: 10px; margin-top: 8px; }
+.stage { position: relative; display: grid; place-items: center; min-height: 340px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; cursor: pointer; border-radius: 10px; margin-top: 8px; }
 .clock { font-family: var(--f-display); font-stretch: 125%; font-weight: 700; font-size: clamp(64px, 13vw, 150px); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; transition: color .08s; }
 .clock.holding { color: var(--hold); } .clock.ready { color: var(--ready); } .clock.inspect { color: var(--warn); }
 .stage:focus-visible { outline: 1px solid var(--line); outline-offset: 0; }
@@ -83,7 +87,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line)
 .times td.n { color: var(--muted); width: 32px; }
 .times .acts { text-align: right; white-space: nowrap; }
 .times .acts button { border: 0; background: none; color: var(--muted); font-size: 11px; padding: 2px 5px; border-radius: 4px; font-family: var(--f-mono); }
-.times .acts button:hover { background: var(--soft); color: var(--ink); }
+@media (hover: hover) { .times .acts button:hover { background: var(--soft); color: var(--ink); } }
 .times .acts button.on { color: var(--accent); font-weight: 600; }
 .times tr.best td.t { color: var(--ok); }
 .empty { color: var(--muted); font-size: 13px; padding: 12px 6px 6px; }
@@ -101,12 +105,12 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line)
 .filters { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 18px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; color: var(--muted); }
-.chip:hover { color: var(--ink); }
+@media (hover: hover) { .chip:hover { color: var(--ink); } }
 .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .filters .spacer { flex: 1; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; grid-template-rows: auto auto 1fr; gap: 8px; cursor: pointer; text-align: left; transition: border-color .12s, transform .12s; }
-.card:hover { border-color: var(--muted); transform: translateY(-1px); }
+@media (hover: hover) { .card:hover { border-color: var(--muted); transform: translateY(-1px); } }
 .card .fig { padding: 4px 14px; }
 .card-top { display: flex; align-items: center; gap: 8px; }
 .card-name { font-family: var(--f-display); font-stretch: 118%; font-weight: 700; font-size: 15px; }
@@ -133,7 +137,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line)
 
 /* modal */
 .overlay { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(6px); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
-.modal { width: min(560px, 100%); max-height: 100%; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 16px; box-shadow: 0 24px 60px rgb(0 0 0 / 0.18); }
+.modal { width: min(560px, 100%); max-height: 100%; overflow-y: auto; overscroll-behavior: contain;background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 16px; box-shadow: 0 24px 60px rgb(0 0 0 / 0.18); }
 .modal-head { display: flex; align-items: center; gap: 10px; }
 .modal-head h3 { margin: 0; font-family: var(--f-display); font-stretch: 125%; font-weight: 800; font-size: 24px; }
 .modal-head .sub { color: var(--muted); font-size: 13px; }
@@ -180,7 +184,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line)
 .g-subs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px 28px; margin-top: 10px; align-items: start; }
 .g-sub-title { font-size: 13px; font-weight: 600; margin: 0 0 4px; }
 .g-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 8px; padding: 9px 8px; margin: 0 -8px; border-top: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
-.g-row:hover { background: var(--soft); }
+@media (hover: hover) { .g-row:hover { background: var(--soft); } }
 .g-row.long { grid-template-columns: 96px minmax(0, 1fr); }
 .g-name { font-family: var(--f-display); font-stretch: 118%; font-weight: 700; font-size: 15px; line-height: 1.35; }
 .g-text { font-size: 13.5px; line-height: 1.4; }
@@ -191,7 +195,7 @@ svg.strip { display: block; height: auto; max-width: 100%; }
 /* level toggle */
 .level { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; flex: none; }
 .level button { border: 0; background: none; padding: 6px 10px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
-.level button:hover { color: var(--ink); }
+@media (hover: hover) { .level button:hover { color: var(--ink); } }
 .level button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .guide ol { margin: 8px 0 0; padding-left: 20px; font-size: 14px; color: var(--muted); max-width: 68ch; }
 .guide li + li { margin-top: 5px; }
@@ -212,6 +216,44 @@ svg.strip { display: block; height: auto; max-width: 100%; }
   .card { padding: 9px; }
   .card .fig { padding: 2px 6px; }
   .card-group { display: none; }
+  /* header: brand and level on one row, tabs spread across the next */
+  .bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding-block: 10px 0; }
+  .brand { font-size: clamp(14px, 4.1vw, 16px); gap: 8px; min-width: 0; overflow: hidden; }
+  nav { gap: 2px; grid-column: 1 / -1; }
+  nav button { flex: 1 0 auto; padding: 10px 8px; border-radius: 6px 6px 0 0; }
+  .level button { padding: 6px 9px; font-size: 12px; }
+  .wide-only { display: none; }
+  .stage { min-height: 240px; }
+  .stat { padding: 9px 10px; }
+  .stat b { font-size: 18px; }
+  .progress { flex: 1 1 100%; }
+  /* filters: one swipeable row per chip group instead of a wall of wrapped chips */
+  .filters { display: grid; gap: 10px; }
+  .filters .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+  .filters .chips::-webkit-scrollbar { display: none; }
+  .filters .chip { flex: none; white-space: nowrap; }
+  .filters .spacer { display: none; }
+  .filters [data-drill] { justify-content: center; padding-block: 10px; }
+  .modal { padding: 18px; gap: 14px; }
+  .modal [data-next] { flex: 1 1 auto; justify-content: center; }
+}
+@media (max-width: 350px) { .brand-mark { display: none; } }
+/* touch: bigger tap targets, no keyboard hints */
+@media (pointer: coarse) {
+  html:has(.overlay) { overflow: hidden; }
+  .btn { padding: 9px 14px; }
+  .chip { padding: 7px 13px; font-size: 13px; }
+  .level button { padding-block: 8px; }
+  .seg button { padding: 9px 14px; }
+  .times .acts button { padding: 8px 9px; font-size: 12px; }
+  .status { padding: 10px; margin: -10px; }
+  .reveal { padding: 18px 14px; }
+  kbd { display: none; }
+}
+/* touch: while the timer runs it fills the screen, so a tap anywhere stops it */
+@media (hover: none) and (pointer: coarse) {
+  .stage.running .clock { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: var(--bg); font-size: clamp(72px, 22vw, 200px); }
+  .stage.running .stage-hint { position: fixed; z-index: 31; inset: auto 0 max(28px, env(safe-area-inset-bottom, 0px)); opacity: .6; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -236,7 +278,7 @@ svg.strip { display: block; height: auto; max-width: 100%; }
       <div style="min-width:0">
         <div class="scramble-card">
           <div class="scramble-head">
-            <span class="eyebrow" id="scr-label">Scramble · 20 moves</span>
+            <span class="eyebrow" id="scr-label">Scramble<span class="wide-only"> · 20 moves</span></span>
             <button class="btn ghost" id="scr-copy" type="button">Copy</button>
             <button class="btn" id="scr-new" type="button">New scramble</button>
           </div>
@@ -542,6 +584,7 @@ const store = {
   set(k, v) { try { localStorage.setItem('scl.' + k, JSON.stringify(v)); } catch {} },
 };
 const r3 = n => Math.round(n * 1000) / 1000;
+const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches; // phone or tablet: talk about touch, not the space bar
 
 // ---------- diagrams ----------
 function svgTop(st, mode) {
@@ -1046,7 +1089,7 @@ function renderStats() {
   $('#times').innerHTML = times.length ? `<table><thead><tr><th>#</th><th>Time</th><th>Ao5</th><th></th></tr></thead><tbody>${times.map((t, i) => ({ t, i })).reverse().map(({ t, i }) => `
     <tr class="${i === bi ? 'best' : ''}" title="${esc(t.scr)}"><td class="n">${i + 1}</td><td class="t">${t.pen === 'dnf' ? `DNF <span style="color:var(--muted);font-weight:400">(${fmt(t.ms)})</span>` : fmt(val(t)) + (t.pen ? '+' : '')}</td><td>${fmt(avgOf(v.slice(0, i + 1), 5))}</td>
     <td class="acts"><button type="button" data-pen="2000" data-i="${i}" class="${t.pen === 2000 ? 'on' : ''}">+2</button><button type="button" data-pen="dnf" data-i="${i}" class="${t.pen === 'dnf' ? 'on' : ''}">DNF</button><button type="button" data-del="${i}" aria-label="Delete solve ${i + 1}">✕</button></td></tr>`).join('')}</tbody></table>`
-    : `<div class="empty">No solves yet. Scramble your cube with the moves above, then hold space to start the timer. Your times and averages will appear here.</div>`;
+    : `<div class="empty">No solves yet. Scramble your cube with the moves above, then ${TOUCH ? 'touch and hold the timer to start it' : 'hold space to start the timer'}. Your times and averages will appear here.</div>`;
 }
 function newScramble() {
   scramble = C.randomScramble(20);
@@ -1068,8 +1111,19 @@ $('#times').addEventListener('click', e => {
   else if (d) times.splice(+d.dataset.del, 1); else return;
   store.set('times', times); renderStats();
 });
-const IDLE_HINT = 'Hold <kbd>Space</kbd> until the time turns green, then release to start. Any key stops it.';
+const IDLE_HINT = TOUCH ? 'Touch and hold here until the time turns green, then let go to start. Tap anywhere to stop.'
+  : 'Hold <kbd>Space</kbd> until the time turns green, then release to start. Any key stops it.';
 const clock = $('#clock'), stage = $('#stage'), hint = $('#hint');
+hint.innerHTML = IDLE_HINT;
+if (TOUCH) stage.setAttribute('aria-label', 'Timer. Touch and hold, then let go to start.');
+// Keep the screen on during inspection and solves, so a long solve doesn't dim or lock a phone.
+const awake = { want: false, lock: null };
+function keepAwake(on) {
+  awake.want = on;
+  if (!on) { if (awake.lock) awake.lock.release().catch(() => {}); awake.lock = null; return; }
+  if (awake.lock || !navigator.wakeLock) return;
+  navigator.wakeLock.request('screen').then(l => { if (awake.want && !awake.lock) awake.lock = l; else l.release(); }, () => {});
+}
 function setClock(cls, text) { clock.className = 'clock ' + cls; if (text != null) clock.textContent = text; }
 function tick() {
   if (T.phase === 'running') clock.textContent = fmt(performance.now() - T.start);
@@ -1091,19 +1145,19 @@ function press() {
   }
 }
 function release() {
-  if (T.phase === 'preInsp') { T.phase = 'inspecting'; T.inspStart = performance.now(); setClock('inspect', '15'); hint.textContent = 'Inspecting. Hold space when you are ready to solve.'; cancelAnimationFrame(T.raf); tick(); return; }
+  if (T.phase === 'preInsp') { T.phase = 'inspecting'; T.inspStart = performance.now(); setClock('inspect', '15'); hint.textContent = `Inspecting. ${TOUCH ? 'Touch and hold' : 'Hold space'} when you are ready to solve.`; keepAwake(true); cancelAnimationFrame(T.raf); tick(); return; }
   if (T.phase === 'hold' || T.phase === 'inspHold') { clearTimeout(T.holdTimer); T.phase = T.phase === 'hold' ? 'idle' : 'inspecting'; setClock(T.phase === 'idle' ? '' : 'inspect', T.phase === 'idle' ? fmt(times.length ? val(times[times.length - 1]) : 0).replace('–', '0.00') : null); return; }
   if (T.phase === 'ready' || T.phase === 'inspReady') {
     const e = T.phase === 'inspReady' ? (performance.now() - T.inspStart) / 1000 : 0;
     T.inspPen = e >= 17 ? 'dnf' : e >= 15 ? 2000 : 0;
     T.phase = 'running'; T.start = performance.now(); setClock('', '0.00'); stage.classList.add('running');
-    hint.textContent = 'Press any key or tap to stop.';
-    cancelAnimationFrame(T.raf); tick();
+    hint.textContent = TOUCH ? 'Tap anywhere to stop.' : 'Press any key or tap to stop.';
+    keepAwake(true); cancelAnimationFrame(T.raf); tick();
   }
 }
 function stop() {
   const ms = Math.round(performance.now() - T.start);
-  T.phase = 'justStopped'; cancelAnimationFrame(T.raf); stage.classList.remove('running');
+  T.phase = 'justStopped'; cancelAnimationFrame(T.raf); stage.classList.remove('running'); keepAwake(false);
   times.push({ ms, pen: T.inspPen || 0, scr: scramble, at: Date.now() });
   store.set('times', times);
   setClock('', fmt(val(times[times.length - 1])));
@@ -1115,7 +1169,7 @@ document.addEventListener('keydown', e => {
   if ($('#overlay')) { if (e.key === 'Escape') { closeModal(); return; } if (modalKeys && modalKeys(e)) return; }
   if (!timerActive()) return;
   if (T.phase === 'running') { e.preventDefault(); stop(); return; }
-  if (e.key === 'Escape' && T.phase.startsWith('insp')) { clearTimeout(T.holdTimer); T.phase = 'idle'; cancelAnimationFrame(T.raf); setClock('', '0.00'); hint.innerHTML = IDLE_HINT; return; }
+  if (e.key === 'Escape' && T.phase.startsWith('insp')) { clearTimeout(T.holdTimer); T.phase = 'idle'; cancelAnimationFrame(T.raf); keepAwake(false); setClock('', '0.00'); hint.innerHTML = IDLE_HINT; return; }
   if (e.key !== ' ' || e.repeat) return;
   if (e.target.closest('button, input') && e.target !== stage) { if (e.target.closest('input')) return; e.target.blur(); }
   e.preventDefault(); press();
@@ -1125,9 +1179,20 @@ document.addEventListener('keyup', e => {
   if (e.key === ' ') { e.preventDefault(); if (T.phase === 'justStopped') { T.phase = 'idle'; return; } release(); }
   else if (T.phase === 'justStopped') T.phase = 'idle';
 });
-stage.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); stage.setPointerCapture?.(e.pointerId); if (T.phase === 'running') { stop(); return; } press(); });
-stage.addEventListener('pointerup', e => { if (T.phase === 'justStopped') { T.phase = 'idle'; return; } release(); });
-stage.addEventListener('pointercancel', () => { if (T.phase === 'hold') release(); });
+// On touch the running clock covers the screen and shrinks back the moment it is tapped, so the browser's
+// follow-up click would land on whatever is now under the finger (a tab, a button). Swallow that one click.
+let swallowClick = 0;
+document.addEventListener('click', e => { if (performance.now() < swallowClick) { e.preventDefault(); e.stopPropagation(); swallowClick = 0; } }, true);
+stage.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); stage.setPointerCapture?.(e.pointerId); if (T.phase === 'running') { stop(); swallowClick = Infinity; return; } press(); });
+stage.addEventListener('pointerup', e => { if (T.phase === 'justStopped') { T.phase = 'idle'; if (swallowClick) swallowClick = performance.now() + 400; return; } release(); });
+// The browser cancels the touch if the finger drifts into a scroll. Back out of the hold rather than sit armed.
+stage.addEventListener('pointercancel', () => {
+  if (T.phase === 'ready' || T.phase === 'inspReady') T.phase = T.phase === 'ready' ? 'hold' : 'inspHold';
+  if (T.phase === 'hold' || T.phase === 'inspHold') release();
+  else if (T.phase === 'preInsp' || T.phase === 'justStopped') T.phase = 'idle';
+  if (swallowClick === Infinity) swallowClick = performance.now() + 400;
+});
+stage.addEventListener('contextmenu', e => e.preventDefault());
 $('#opt-inspect').checked = store.get('inspect', false);
 $('#opt-inspect').onchange = e => { store.set('inspect', e.target.checked); e.target.blur(); };
 
